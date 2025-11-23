@@ -1,0 +1,34 @@
+# Build results
+[Bb]in/
+[Oo]bj/
+[Ll]og/
+[Tt]estResults/
+
+# Rider / JetBrains
+.idea/
+
+# VS Code
+.vscode/
+
+# Visual Studio
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# OS-specific
+.DS_Store
+Thumbs.db
+
+# NuGet
+*.nupkg
+*.snupkg
+# NuGet restore caches
+*.nuget.props
+*.nuget.targets
+
+# Other build artifacts
+*.cache
+*.db
+*.bak
+
