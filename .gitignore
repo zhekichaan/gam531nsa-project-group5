@@ -10,6 +10,9 @@
 # VS Code
 .vscode/
 
+# Visual Studio cache
+.vs/
+
 # Visual Studio
 *.user
 *.suo
