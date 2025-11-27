@@ -59,9 +59,10 @@ namespace FinalProject
 
             Mesh sampleTree = new Mesh("Assets/Models/tree12.fbx", _shader, Texture.LoadFromFile("Assets/Textures/tree12.png"), _camera);
 
-            Mesh sampleBush = new Mesh("Assets/Models/bush01.fbx", _shader, Texture.LoadFromFile("Assets/Textures/bush01.png"), _camera);
-
             Mesh car = new Mesh("Assets/Models/car.fbx", _shader, Texture.LoadFromFile("Assets/Textures/car.png"), _camera);
+            
+            Mesh monster = new Mesh("Assets/Models/monster.fbx", _shader, Texture.LoadFromFile("Assets/Textures/monster.png"), _camera);
+            
             
             Mesh flashlightMesh = new Mesh(
                 "Assets/Models/flashlight.fbx", 
@@ -76,15 +77,13 @@ namespace FinalProject
             
             _worldObjects.Add(new WorldObject(car, new Vector3(0, 0, 10), new Vector3(0.7f), 0, true));
             
+            _worldObjects.Add(new WorldObject(monster, new Vector3(5, 1.35f, 10), new Vector3(5f), 0, false));
+            
             // Adding ground to our world objects
-            _worldObjects.Add(new WorldObject(ground, new Vector3(0, 0, 0), new Vector3(1f), 0));
+            _worldObjects.Add(new WorldObject(ground, new Vector3(0, 0, 0), new Vector3(2f), 0));
 
             // Adding sample tree
             _worldObjects.Add(new WorldObject(sampleTree, new Vector3(2, -0.8f, -5), new Vector3(0.008f), 0, true, new Vector3(0.5f, 10f, 0.5f)));
-
-            // Adding sample bush
-            _worldObjects.Add(new WorldObject(sampleBush, new Vector3(-2, 0, -5), new Vector3(0.0025f), 0, false));
-
 
             GL.ClearColor(0.1f, 0.1f, 0.1f, 1f);
         }
