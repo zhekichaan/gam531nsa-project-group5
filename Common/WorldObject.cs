@@ -5,10 +5,10 @@ namespace FinalProject.Common;
 
 public class WorldObject
 {
-    private readonly Mesh _mesh;
-    private readonly Vector3 _position;
-    private readonly Vector3 _scale;
-    private readonly float _rotation;
+    public readonly Mesh Mesh;
+    public Vector3 Position;
+    public readonly Vector3 Scale;
+    public float Rotation;
     private readonly bool _hasCollision;
 
     public BoundingBox CollisionBox { get; private set; }
@@ -18,10 +18,10 @@ public class WorldObject
     public WorldObject(Mesh mesh, Vector3 position, Vector3 scale, float rotation,
         bool hasCollision = true, Vector3? customCollisionSize = null)
     {
-        _mesh = mesh;
-        _position = position;
-        _scale = scale;
-        _rotation = rotation;
+        Mesh = mesh;
+        Position = position;
+        Scale = scale;
+        Rotation = rotation;
         _hasCollision = hasCollision;
         _customCollisionSize = customCollisionSize;
 
@@ -31,10 +31,10 @@ public class WorldObject
     public virtual void UpdateTransform()
     {
         Matrix4 model = Matrix4.Identity;
-        model *= Matrix4.CreateScale(_scale);
-        model *= Matrix4.CreateRotationY(_rotation);
-        model *= Matrix4.CreateTranslation(_position);
-        _mesh.Transform = model;
+        model *= Matrix4.CreateScale(Scale);
+        model *= Matrix4.CreateRotationY(Rotation);
+        model *= Matrix4.CreateTranslation(Position);
+        Mesh.Transform = model;
     }
 
     public void UpdateBoundingBox()
@@ -42,25 +42,25 @@ public class WorldObject
         if (_customCollisionSize.HasValue)
         {
             // Use custom collision box size
-            CollisionBox = BoundingBox.FromCenterAndSize(_position, _customCollisionSize.Value, Vector3.One);
+            CollisionBox = BoundingBox.FromCenterAndSize(Position, _customCollisionSize.Value, Vector3.One);
         }
         else
         {
             CollisionBox = BoundingBox.Transform(
-                _mesh.OriginalMin,
-                _mesh.OriginalMax,
-                _position,
-                _scale,
-                _rotation
+                Mesh.OriginalMin,
+                Mesh.OriginalMax,
+                Position,
+                Scale,
+                Rotation
             );
         }
     }
-
+    
     public void Draw()
     {
         UpdateTransform();
 
-        _mesh.Draw();
+        Mesh.Draw();
     }
 
     public bool CheckCollision(BoundingBox other)

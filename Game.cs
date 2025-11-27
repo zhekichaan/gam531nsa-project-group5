@@ -1,4 +1,5 @@
 using FinalProject.Common;
+using FinalProject.Helpers;
 using OpenTK.Graphics.OpenGL4;
 using OpenTK.Mathematics;
 using OpenTK.Windowing.Common;
@@ -17,6 +18,8 @@ namespace FinalProject
 
         private bool _firstMove = true;
         private Vector2 _lastPos;
+        
+        private FlashlightObject _flashlightModel;
 
         List<WorldObject> _worldObjects;
 
@@ -58,8 +61,18 @@ namespace FinalProject
 
             Mesh sampleBush = new Mesh("Assets/Models/bush01.fbx", _shader, Texture.LoadFromFile("Assets/Textures/bush01.png"), _camera);
 
+            
+            var flashlightMesh = new Mesh(
+                "Assets/Models/flashlight.fbx", 
+                _shader, 
+                Texture.LoadFromFile("Assets/Textures/flashlight.png"), 
+                _camera
+            );
+            
+            _flashlightModel = new FlashlightObject(flashlightMesh);
+            
             _worldObjects = new List<WorldObject>();
-
+            
             // Adding ground to our world objects
             _worldObjects.Add(new WorldObject(ground, new Vector3(0, 0, 0), new Vector3(1f), 0));
 
@@ -88,6 +101,11 @@ namespace FinalProject
             foreach (var obj in _worldObjects)
             {
                 obj.Draw();
+            }
+            
+            if (_flashlightEnabled)
+            {
+                _flashlightModel.Draw();
             }
 
             SwapBuffers();
@@ -190,6 +208,9 @@ namespace FinalProject
                 _camera.Yaw += deltaX * _sensitivity;
                 _camera.Pitch -= deltaY * _sensitivity;
             }
+            
+            Vector3 flashlightOffset = new Vector3(0.4f, -0.3f, 0.5f);
+            _flashlightModel.UpdateFromCamera(_camera, flashlightOffset);
         }
 
         private bool CheckPlayerCollision(Vector3 position)
