@@ -73,6 +73,9 @@ namespace FinalProject
             Mesh flashlightMesh = new Mesh("Assets/Models/flashlight.fbx", _shader,
                 Texture.LoadFromFile("Assets/Textures/flashlight.png"), _camera);
 
+            Mesh battery = new Mesh("Assets/Models/battery.fbx", _shader,
+                Texture.LoadFromFile("Assets/Textures/battery.png"), _camera);
+            
             _flashlightModel = new FlashlightObject(flashlightMesh);
 
             _worldObjects = new List<WorldObject>();
@@ -82,6 +85,8 @@ namespace FinalProject
             _worldObjects.Add(new WorldObject(sampleTree, new Vector3(2, -0.8f, -5), new Vector3(0.008f), 0, true,
                 new Vector3(0.5f, 10f, 0.5f))); // tree w/ collision
 
+            _worldObjects.Add(new WorldObject(battery, new Vector3(0, 0.5f, -5), new Vector3(0.8f), 0, false));
+            
             // UI setup
             ImGui.CreateContext();
             ImGui.GetIO().ConfigFlags |= ImGuiConfigFlags.NavEnableKeyboard;
