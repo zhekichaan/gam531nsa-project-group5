@@ -78,7 +78,7 @@ namespace FinalProject
 
             Mesh battery = new Mesh("Assets/Models/battery.fbx", _shader,
                 Texture.LoadFromFile("Assets/Textures/battery.png"), _camera);
-            
+
             _flashlightModel = new FlashlightObject(flashlightMesh);
 
             _worldObjects = new List<WorldObject>();
@@ -103,7 +103,7 @@ namespace FinalProject
                 new Vector3(0.5f, 10f, 0.5f))); // tree w/ collision
 
             _worldObjects.Add(new WorldObject(battery, new Vector3(0, 0.5f, -5), new Vector3(0.8f), 0, false));
-            
+
             // UI setup
             ImGui.CreateContext();
             ImGui.GetIO().ConfigFlags |= ImGuiConfigFlags.NavEnableKeyboard;
@@ -153,11 +153,11 @@ namespace FinalProject
             GL.Viewport(0, 0, FramebufferSize.X, FramebufferSize.Y);
             ImguiImplOpenGL3.RenderDrawData(ImGui.GetDrawData());
 
-            // Show monster state in the window title
-            if (_monsterAI != null)
-            {
-                Title = $"Monster: {_monsterAI.CurrentState}";
-            }
+            // Show monster state in the window title For debugging
+            //if (_monsterAI != null)
+            //{
+            //    Title = $"Monster: {_monsterAI.CurrentState}";
+            //}
 
             SwapBuffers();
         }
@@ -314,7 +314,7 @@ namespace FinalProject
         private void BuildMainMenuUI()
         {
             CursorState = CursorState.Normal;
-            
+
             // Centered title + START + EXIT
             ImGui.SetNextWindowPos(new System.Numerics.Vector2(Size.X * 0.5f, Size.Y * 0.5f), ImGuiCond.Always,
                 new System.Numerics.Vector2(0.5f, 0.5f));
@@ -358,7 +358,7 @@ namespace FinalProject
 
         private void BuildInGameUI()
         {
-            
+
             // Battery HUD top-left corner
             ImGui.SetNextWindowPos(new System.Numerics.Vector2(12, 12), ImGuiCond.Always);
             ImGui.SetNextWindowBgAlpha(0.0f);
@@ -383,7 +383,7 @@ namespace FinalProject
                 ImGui.SetWindowFontScale(1.0f);
                 ImGui.End();
             }
-            
+
             ImGui.End();
         }
 
