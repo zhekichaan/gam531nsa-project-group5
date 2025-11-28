@@ -23,15 +23,13 @@ namespace FinalProject
         private const float CHASE_SPEED = 3.5f;
 
         // Rotation speed
-        private const float ROTATION_SPEED = 180f; // degrees per second
+        private const float ROTATION_SPEED = 180f;
 
         // Detection ranges
         private const float LIGHT_DETECTION_RANGE = 25f;
         private const float VISUAL_DETECTION_RANGE = 8f;
-        private const float VISUAL_DETECTION_ANGLE = 60f; // degrees (cone in front)
+        private const float VISUAL_DETECTION_ANGLE = 60f; //cone in front)
 
-        // Movement smoothing
-        private float _currentYaw;
 
         // Patrol variables
         private Vector3 _patrolTarget;
@@ -61,7 +59,6 @@ namespace FinalProject
             _random = new Random();
             _patrolTarget = GenerateRandomPatrolPoint();
             _wasFlashlightOn = false;
-            _currentYaw = _monsterObject.Rotation;
         }
 
         public void Update(float deltaTime, Vector3 playerPosition, bool flashlightOn)
@@ -120,12 +117,12 @@ namespace FinalProject
                     {
                         TransitionToHunting(playerPosition);
                     }
-                    // If player spotted visually, start chasing
+                    // If player spotted visually start chasing
                     else if (CanSeePlayer(playerPosition))
                     {
                         TransitionToChasing(playerPosition);
                     }
-                    // If flashlight still on but out of range, return to patrol
+                    // If flashlight still on but out of range return to patrol
                     else if (flashlightOn && distanceToPlayer > LIGHT_DETECTION_RANGE * 1.2f)
                     {
                         TransitionToPatrol();
@@ -143,7 +140,7 @@ namespace FinalProject
                     {
                         TransitionToChasing(playerPosition);
                     }
-                    // Timeout - give up and return to patrol
+                    // Timeout give up and return to patrol
                     else if (_huntingGiveUpTimer <= 0)
                     {
                         TransitionToPatrol();
@@ -151,7 +148,7 @@ namespace FinalProject
                     break;
 
                 case MonsterState.Chasing:
-                    // If lost sight of player for too long, investigate last position (hunt)
+                    // If lost sight of player for too long hunt at the last position
                     if (!CanSeePlayer(playerPosition))
                     {
                         _losePlayerTimer -= 0.016f; // Approximate frame time
@@ -173,7 +170,7 @@ namespace FinalProject
         {
             Vector3 monsterPosition = _monsterObject.Position;
             Vector3 directionToTarget = _patrolTarget - monsterPosition;
-            directionToTarget.Y = 0; // Keep on ground
+            directionToTarget.Y = 0;
             float distance = directionToTarget.Length;
 
             if (distance < 1f)
@@ -205,7 +202,7 @@ namespace FinalProject
 
             float distanceToPlayer = directionToPlayer.Length;
 
-            // Only move if not too close (prevent jittering when very close)
+            // Only move if not too close
             if (distanceToPlayer > 1.5f)
             {
                 Vector3 direction = Vector3.Normalize(directionToPlayer);
@@ -233,16 +230,13 @@ namespace FinalProject
 
             if (distance < 2f)
             {
-                //Reached last known position, look around (just wait)
-                _huntingGiveUpTimer -= deltaTime * 2; // Give up faster when at location
+                _huntingGiveUpTimer -= deltaTime * 2;//give up faster when reached last known position
             }
             else
             {
                 // Move toward last known position
                 Vector3 direction = Vector3.Normalize(directionToTarget);
                 _monsterObject.Position += direction * HUNTING_SPEED * deltaTime;
-
-                // Smooth rotate to face target
                 SmoothRotateTowards(direction, deltaTime);
             }
         }
@@ -260,8 +254,6 @@ namespace FinalProject
             {
                 Vector3 direction = Vector3.Normalize(directionToPlayer);
                 _monsterObject.Position += direction * CHASE_SPEED * deltaTime;
-
-                // Smooth rotate to face player
                 SmoothRotateTowards(direction, deltaTime);
             }
             else
@@ -276,6 +268,8 @@ namespace FinalProject
         {
             Vector3 monsterPosition = _monsterObject.Position;
             Vector3 toPlayer = playerPosition - monsterPosition;
+
+            //toPlayer.Y = 0; // Ignore vertical difference
             float distance = toPlayer.Length;
 
             // Too far to see
@@ -292,57 +286,45 @@ namespace FinalProject
             return angle < VISUAL_DETECTION_ANGLE;
         }
 
-
-
         private void SmoothRotateTowards(Vector3 direction, float deltaTime)
         {
-            if (direction.Length < 0.01f)
+            if (direction.LengthSquared < 0.01f)
                 return;
 
-            // Calculate target rotation
+            // Target yaw in RADIANS
             float targetYaw = MathF.Atan2(direction.X, direction.Z);
-            float targetYawDegrees = MathHelper.RadiansToDegrees(targetYaw);
 
-            // Normalize angles to -180 to 180
-            float currentNormalized = NormalizeAngle(_currentYaw);
-            float targetNormalized = NormalizeAngle(targetYawDegrees);
+            // fbx models have wrong forward axis so we adjust by 90 degrees
+            targetYaw += MathHelper.DegreesToRadians(-90f);
 
-            // Find shortest rotation direction
-            float difference = targetNormalized - currentNormalized;
-            if (difference > 180f)
-                difference -= 360f;
-            else if (difference < -180f)
-                difference += 360f;
+            float currentYaw = _monsterObject.Rotation;
 
-            // Only rotate if difference is significant (reduces jittery rotation)
-            const float ROTATION_THRESHOLD = 5f; // degrees
-            if (MathF.Abs(difference) < ROTATION_THRESHOLD)
+            // Compute shortest angle difference
+            float difference = targetYaw - currentYaw;
+
+            while (difference > MathF.PI) difference -= 2f * MathF.PI;
+            while (difference < -MathF.PI) difference += 2f * MathF.PI;
+
+            //dont rotate if already facing close enough
+            if (MathF.Abs(difference) < 0.05f)
                 return;
 
-            // Smoothly interpolate
-            float maxRotation = ROTATION_SPEED * deltaTime;
-            if (MathF.Abs(difference) < maxRotation)
-            {
-                _currentYaw = targetYawDegrees;
-            }
-            else
-            {
-                _currentYaw += MathF.Sign(difference) * maxRotation;
-            }
+            // Apply smooth rotation
+            float maxRotationThisFrame = MathHelper.DegreesToRadians(ROTATION_SPEED) * deltaTime;
 
-            _monsterObject.Rotation = _currentYaw;
+            float rotationStep = MathF.Sign(difference) * MathF.Min(maxRotationThisFrame, MathF.Abs(difference));
+
+            _monsterObject.Rotation = currentYaw + rotationStep;
         }
 
-        private float NormalizeAngle(float angle)
-        {
-            while (angle > 180f) angle -= 360f;
-            while (angle < -180f) angle += 360f;
-            return angle;
-        }
 
         private Vector3 GetMonsterForward()
         {
-            float yawRadians = MathHelper.DegreesToRadians(_monsterObject.Rotation);
+            float yawRadians = _monsterObject.Rotation;
+
+            // supporting the adjustemtn for the fbx model forward axis
+            // see line 297
+            yawRadians += MathHelper.DegreesToRadians(90f);
             return new Vector3(MathF.Sin(yawRadians), 0, MathF.Cos(yawRadians));
         }
 
@@ -351,7 +333,7 @@ namespace FinalProject
             // Generate random point within patrol area
             float x = (float)(_random.NextDouble() * 40 - 20); // -20 to 20
             float z = (float)(_random.NextDouble() * 40 - 20); // -20 to 20
-            return new Vector3(x, 1.35f, z); // Keep at monster's height
+            return new Vector3(x, 1.35f, z);
         }
 
         private void TransitionToPatrol()
