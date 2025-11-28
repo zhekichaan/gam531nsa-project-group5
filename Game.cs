@@ -278,6 +278,8 @@ namespace FinalProject
 
         private void BuildMainMenuUI()
         {
+            CursorState = CursorState.Normal;
+            
             // Centered title + START + EXIT
             ImGui.SetNextWindowPos(new System.Numerics.Vector2(Size.X * 0.5f, Size.Y * 0.5f), ImGuiCond.Always,
                 new System.Numerics.Vector2(0.5f, 0.5f));
@@ -321,6 +323,8 @@ namespace FinalProject
 
         private void BuildInGameUI()
         {
+            CursorState = CursorState.Normal;
+            
             // Battery HUD top-left corner
             ImGui.SetNextWindowPos(new System.Numerics.Vector2(12, 12), ImGuiCond.Always);
             ImGui.SetNextWindowBgAlpha(0.0f);
