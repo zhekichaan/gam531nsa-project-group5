@@ -30,6 +30,9 @@ namespace FinalProject
         private bool _nearCar = false;
         private bool _eKeyPressed = false; // debounce for E
 
+        // Monster AI
+        private WorldObject _monsterObject;
+        private MonsterAI _monsterAI;
         // Flashlight system
         private bool _flashlightEnabled = false;
         private bool _fKeyPressed = false; // debounce toggle
@@ -75,18 +78,32 @@ namespace FinalProject
 
             Mesh battery = new Mesh("Assets/Models/battery.fbx", _shader,
                 Texture.LoadFromFile("Assets/Textures/battery.png"), _camera);
-            
+
             _flashlightModel = new FlashlightObject(flashlightMesh);
 
             _worldObjects = new List<WorldObject>();
+
+            _worldObjects.Add(new WorldObject(car, new Vector3(0, 0, 10), new Vector3(0.7f), 0, true));
+
+            // Create monster with AI
+            _monsterObject = new WorldObject(monster, new Vector3(5, 1.35f, 10), new Vector3(5f), 0, true);
+            _monsterAI = new MonsterAI(_monsterObject);
+            _worldObjects.Add(_monsterObject);
+
+            // Adding ground to our world objects
+            _worldObjects.Add(new WorldObject(ground, new Vector3(0, 0, 0), new Vector3(2f), 0));
+
+            // Adding sample tree
+            _worldObjects.Add(new WorldObject(sampleTree, new Vector3(2, -0.8f, -5), new Vector3(0.008f), 0, true, new Vector3(0.5f, 10f, 0.5f)));
+
             _worldObjects.Add(new WorldObject(car, _carPosition, new Vector3(0.7f), 0, true)); // Escape target
-            _worldObjects.Add(new WorldObject(monster, new Vector3(5, 1.35f, 10), new Vector3(5f), 0, false)); // Enemy
+            //_worldObjects.Add(new WorldObject(monster, new Vector3(5, 1.35f, 10), new Vector3(5f), 0, false)); // Enemy
             _worldObjects.Add(new WorldObject(ground, new Vector3(0, 0, 0), new Vector3(2f), 0)); // floor
             _worldObjects.Add(new WorldObject(sampleTree, new Vector3(2, -0.8f, -5), new Vector3(0.008f), 0, true,
                 new Vector3(0.5f, 10f, 0.5f))); // tree w/ collision
 
             _worldObjects.Add(new WorldObject(battery, new Vector3(0, 0.5f, -5), new Vector3(0.8f), 0, false));
-            
+
             // UI setup
             ImGui.CreateContext();
             ImGui.GetIO().ConfigFlags |= ImGuiConfigFlags.NavEnableKeyboard;
@@ -135,6 +152,12 @@ namespace FinalProject
             ImGui.Render();
             GL.Viewport(0, 0, FramebufferSize.X, FramebufferSize.Y);
             ImguiImplOpenGL3.RenderDrawData(ImGui.GetDrawData());
+
+            // Show monster state in the window title For debugging
+            //if (_monsterAI != null)
+            //{
+            //    Title = $"Monster: {_monsterAI.CurrentState}";
+            //}
 
             SwapBuffers();
         }
@@ -273,6 +296,9 @@ namespace FinalProject
             // Attach flashlight model to camera
             Vector3 flashlightOffset = new Vector3(0.4f, -0.3f, 0.5f);
             _flashlightModel.UpdateFromCamera(_camera, flashlightOffset);
+
+            // Update Monster AI
+            _monsterAI.Update((float)e.Time, _camera.Position, _flashlightEnabled);
         }
 
         private bool CheckPlayerCollision(Vector3 position)
@@ -288,7 +314,7 @@ namespace FinalProject
         private void BuildMainMenuUI()
         {
             CursorState = CursorState.Normal;
-            
+
             // Centered title + START + EXIT
             ImGui.SetNextWindowPos(new System.Numerics.Vector2(Size.X * 0.5f, Size.Y * 0.5f), ImGuiCond.Always,
                 new System.Numerics.Vector2(0.5f, 0.5f));
@@ -332,7 +358,7 @@ namespace FinalProject
 
         private void BuildInGameUI()
         {
-            
+
             // Battery HUD top-left corner
             ImGui.SetNextWindowPos(new System.Numerics.Vector2(12, 12), ImGuiCond.Always);
             ImGui.SetNextWindowBgAlpha(0.0f);
@@ -357,7 +383,7 @@ namespace FinalProject
                 ImGui.SetWindowFontScale(1.0f);
                 ImGui.End();
             }
-            
+
             ImGui.End();
         }
 
