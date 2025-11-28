@@ -179,6 +179,10 @@ namespace FinalProject
             {
                 _cameraSpeed = 4f;
             }
+            else
+            {
+                _cameraSpeed = 2f;
+            }
 
             Vector3 oldPosition = _camera.Position;
             Vector3 newPosition = oldPosition;
