@@ -18,10 +18,14 @@ namespace FinalProject
 
         private bool _firstMove = true;
         private Vector2 _lastPos;
-        
+
         private FlashlightObject _flashlightModel;
 
         List<WorldObject> _worldObjects;
+
+        // Monster AI
+        private WorldObject _monsterObject;
+        private MonsterAI _monsterAI;
 
         // Flashlight variables
         private bool _flashlightEnabled = false;
@@ -30,10 +34,10 @@ namespace FinalProject
         public Game()
             : base(GameWindowSettings.Default, new NativeWindowSettings())
         {
-            this.Size = new Vector2i(1920, 1080);
+            this.Size = new Vector2i(800, 600);
 
             // Open game in full screen mode
-            this.WindowState = WindowState.Fullscreen;
+            //this.WindowState = WindowState.Fullscreen;
         }
 
         protected override void OnLoad()
@@ -60,25 +64,28 @@ namespace FinalProject
             Mesh sampleTree = new Mesh("Assets/Models/tree12.fbx", _shader, Texture.LoadFromFile("Assets/Textures/tree12.png"), _camera);
 
             Mesh car = new Mesh("Assets/Models/car.fbx", _shader, Texture.LoadFromFile("Assets/Textures/car.png"), _camera);
-            
+
             Mesh monster = new Mesh("Assets/Models/monster.fbx", _shader, Texture.LoadFromFile("Assets/Textures/monster.png"), _camera);
-            
-            
+
+
             Mesh flashlightMesh = new Mesh(
-                "Assets/Models/flashlight.fbx", 
-                _shader, 
-                Texture.LoadFromFile("Assets/Textures/flashlight.png"), 
+                "Assets/Models/flashlight.fbx",
+                _shader,
+                Texture.LoadFromFile("Assets/Textures/flashlight.png"),
                 _camera
             );
-            
+
             _flashlightModel = new FlashlightObject(flashlightMesh);
-            
+
             _worldObjects = new List<WorldObject>();
-            
+
             _worldObjects.Add(new WorldObject(car, new Vector3(0, 0, 10), new Vector3(0.7f), 0, true));
-            
-            _worldObjects.Add(new WorldObject(monster, new Vector3(5, 1.35f, 10), new Vector3(5f), 0, false));
-            
+
+            // Create monster with AI
+            _monsterObject = new WorldObject(monster, new Vector3(5, 1.35f, 10), new Vector3(5f), 0, true);
+            _monsterAI = new MonsterAI(_monsterObject);
+            _worldObjects.Add(_monsterObject);
+
             // Adding ground to our world objects
             _worldObjects.Add(new WorldObject(ground, new Vector3(0, 0, 0), new Vector3(2f), 0));
 
@@ -104,10 +111,16 @@ namespace FinalProject
             {
                 obj.Draw();
             }
-            
+
             if (_flashlightEnabled)
             {
                 _flashlightModel.Draw();
+            }
+
+            // Show monster state in the window title
+            if (_monsterAI != null)
+            {
+                Title = $"Monster: {_monsterAI.CurrentState}";
             }
 
             SwapBuffers();
@@ -149,6 +162,10 @@ namespace FinalProject
             if (input.IsKeyDown(Keys.LeftShift))
             {
                 _cameraSpeed = 4f;
+            }
+            else
+            {
+                _cameraSpeed = 2f;
             }
 
             Vector3 oldPosition = _camera.Position;
@@ -210,9 +227,12 @@ namespace FinalProject
                 _camera.Yaw += deltaX * _sensitivity;
                 _camera.Pitch -= deltaY * _sensitivity;
             }
-            
+
             Vector3 flashlightOffset = new Vector3(0.4f, -0.3f, 0.5f);
             _flashlightModel.UpdateFromCamera(_camera, flashlightOffset);
+
+            // Update Monster AI
+            _monsterAI.Update((float)e.Time, _camera.Position, _flashlightEnabled);
         }
 
         private bool CheckPlayerCollision(Vector3 position)
