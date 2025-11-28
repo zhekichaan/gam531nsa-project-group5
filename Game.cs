@@ -323,7 +323,6 @@ namespace FinalProject
 
         private void BuildInGameUI()
         {
-            CursorState = CursorState.Normal;
             
             // Battery HUD top-left corner
             ImGui.SetNextWindowPos(new System.Numerics.Vector2(12, 12), ImGuiCond.Always);
