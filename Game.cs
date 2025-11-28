@@ -29,8 +29,7 @@ namespace FinalProject
         {
             this.Size = new Vector2i(1920, 1080);
 
-            // Open game in full screen mode
-            this.WindowState = WindowState.Fullscreen;
+            // Open 
         }
 
         protected override void OnLoad()
