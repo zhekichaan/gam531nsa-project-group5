@@ -160,7 +160,7 @@ namespace FinalProject
                 treeMeshes,
                 bushMeshes,
                 exclusionZones,
-                exclusionRadius: 6.5f,
+                exclusionRadius: 6f,
                 worldSize: 60f
             );
 
@@ -169,9 +169,9 @@ namespace FinalProject
             worldGen.GenerateBatteries(
                 _collectibleBatteries,
                 batteryMesh,
-                count: 50,
+                count: 20,
                 exclusionZones,
-                exclusionRadius: 6.5f,
+                exclusionRadius: 6f,
                 worldSize: 60f
             );
 

@@ -19,7 +19,7 @@ namespace FinalProject.Helpers
             List<Mesh> bushMeshes,
             List<Vector3> exclusionZones,
             float exclusionRadius = 15f,
-            float worldSize = 50f)
+            float worldSize = 60f)
         {
             if (treeMeshes.Count == 0)
             {
@@ -119,7 +119,7 @@ namespace FinalProject.Helpers
             Mesh batteryMesh,
             int count,
             List<Vector3> exclusionZones,
-            float exclusionRadius = 20f,
+            float exclusionRadius = 6f,
             float worldSize = 50f)
         {
             Console.WriteLine($"[WORLD GEN] Spawning {count} batteries...");
@@ -127,7 +127,7 @@ namespace FinalProject.Helpers
             int spawned = 0;
             int attempts = 0;
 
-            while (spawned < count && attempts < count * 20)
+            while (spawned < count && attempts < count * 40)
             {
                 attempts++;
 
@@ -151,7 +151,7 @@ namespace FinalProject.Helpers
                 bool tooCloseToOtherBattery = false;
                 foreach (var battery in batteries)
                 {
-                    if (Vector3.Distance(pos, battery.Position) < 25f)
+                    if (Vector3.Distance(pos, battery.Position) < 15f)
                     {
                         tooCloseToOtherBattery = true;
                         break;
