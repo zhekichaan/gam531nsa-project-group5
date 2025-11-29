@@ -55,7 +55,7 @@ namespace FinalProject
             : base(GameWindowSettings.Default, new NativeWindowSettings())
         {
             this.Size = new Vector2i(1920, 1080);
-            //this.WindowState = WindowState.Fullscreen;
+            this.WindowState = WindowState.Fullscreen;
         }
 
         protected override void OnLoad()
