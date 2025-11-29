@@ -45,6 +45,8 @@ namespace FinalProject
         private float _batteryPercentage;
         private readonly float _batteryDrainPerSecond = 5f / 60f; // drains 5% per minute
 
+        private AudioComponent _monsterGrowl;
+
         public Game()
             : base(GameWindowSettings.Default, new NativeWindowSettings())
         {
@@ -113,6 +115,18 @@ namespace FinalProject
 
             _batteryPercentage = 100f; // start full
             GL.ClearColor(0.1f, 0.1f, 0.1f, 1f);
+
+            AudioComponent.InitializeAudio();
+            _monsterGrowl = new AudioComponent("Assets/Audio/deep-growl.wav", _monsterObject.Position, 100);
+            _monsterGrowl.Looping = true;
+            _monsterGrowl.Play();
+        }
+
+        protected override void OnUnload()
+        {
+            base.OnUnload();
+            _monsterGrowl.Dispose();
+            AudioComponent.ShutdownAudio();
         }
 
         protected override void OnRenderFrame(FrameEventArgs e)
@@ -299,6 +313,9 @@ namespace FinalProject
 
             // Update Monster AI
             _monsterAI.Update((float)e.Time, _camera.Position, _flashlightEnabled);
+
+            AudioComponent.UpdateUserAudioLocationFromCamera(_camera);
+            _monsterGrowl.Position = _monsterObject.Position;
         }
 
         private bool CheckPlayerCollision(Vector3 position)
