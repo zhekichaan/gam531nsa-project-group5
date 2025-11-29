@@ -14,6 +14,7 @@ namespace FinalProject
     {
         private Shader _shader;
         private Camera _camera;
+        private Skybox _skybox;
 
         private float _cameraSpeed = 2f; // walking speed
         private readonly float _sensitivity = 0.2f; // mouse look sensitivity
@@ -49,7 +50,7 @@ namespace FinalProject
             : base(GameWindowSettings.Default, new NativeWindowSettings())
         {
             this.Size = new Vector2i(1920, 1080);
-            this.WindowState = WindowState.Fullscreen; // always fullscreen
+            //this.WindowState = WindowState.Fullscreen; // always fullscreen
         }
 
         protected override void OnLoad()
@@ -63,6 +64,13 @@ namespace FinalProject
             // Load shader and camera
             _shader = new Shader("Assets/Shaders/shader.vert", "Assets/Shaders/shader.frag");
             _camera = new Camera(Vector3.UnitY * 1.6f, Size.X / (float)Size.Y); // player height view
+
+            // Initialize Skybox
+            _skybox = new Skybox(
+                "Assets/Textures/Skybox/sky.png",
+                "Assets/Shaders/skybox_vertex.glsl",
+                "Assets/Shaders/skybox_fragment.glsl"
+            );
 
             // Load world objects
             Mesh ground = new Mesh("Assets/Models/terrain.fbx", _shader,
@@ -134,6 +142,11 @@ namespace FinalProject
 
             GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
 
+            // Draw skybox FIRST
+            Matrix4 view = _camera.GetViewMatrix();
+            Matrix4 projection = _camera.GetProjectionMatrix();
+            _skybox.Draw(view, projection);
+
             // Update flashlight data to shader
             _shader.Use();
             _shader.SetVector3("flashlight.position", _camera.Position);
@@ -152,12 +165,6 @@ namespace FinalProject
             ImGui.Render();
             GL.Viewport(0, 0, FramebufferSize.X, FramebufferSize.Y);
             ImguiImplOpenGL3.RenderDrawData(ImGui.GetDrawData());
-
-            // Show monster state in the window title For debugging
-            //if (_monsterAI != null)
-            //{
-            //    Title = $"Monster: {_monsterAI.CurrentState}";
-            //}
 
             SwapBuffers();
         }

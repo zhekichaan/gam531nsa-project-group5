@@ -16,6 +16,12 @@
     </ItemGroup>
 
     <ItemGroup>
+      <None Update="Assets\Shaders\skybox_fragment.glsl">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </None>
+      <None Update="Assets\Shaders\skybox_vertex.glsl">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </None>
       <None Update="Assets\Textures\dirt.png">
         <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       </None>
@@ -30,6 +36,9 @@
       </None>
       <None Update="Assets\Models\tree01.fbx">
         <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </None>
+      <None Update="Assets\Textures\Skybox\sky.png">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       </None>
       <None Update="Assets\Textures\tree01.png">
         <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
@@ -76,6 +85,10 @@
       <None Update="Assets\Models\battery.fbx">
         <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       </None>
+    </ItemGroup>
+
+    <ItemGroup>
+      <Folder Include="Assets\Textures\Skybox\" />
     </ItemGroup>
 
 </Project>
