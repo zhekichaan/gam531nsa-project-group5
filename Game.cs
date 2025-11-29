@@ -16,8 +16,8 @@ namespace FinalProject
         private Camera _camera;
         private Skybox _skybox;
 
-        private float _cameraSpeed = 2f; // walking speed
-        private readonly float _sensitivity = 0.2f; // mouse look sensitivity
+        private float _cameraSpeed = 2f;
+        private readonly float _sensitivity = 0.2f;
 
         private bool _firstMove = true;
         private Vector2 _lastPos;
@@ -26,10 +26,10 @@ namespace FinalProject
         List<WorldObject> _worldObjects;
 
         private Vector3 _carPosition = new Vector3(0, 0, 10);
-        private float _carTriggerRadius = 4.0f; // how close you must be
+        private float _carTriggerRadius = 4.0f;
 
         private bool _nearCar = false;
-        private bool _eKeyPressed = false; // debounce for E
+        private bool _eKeyPressed = false;
 
         // Monster AI
         private WorldObject _monsterObject;
@@ -37,7 +37,7 @@ namespace FinalProject
 
         // Flashlight system
         private bool _flashlightEnabled = false;
-        private bool _fKeyPressed = false; // debounce toggle
+        private bool _fKeyPressed = false;
 
         // Game state
         private bool _gameStarted;
@@ -45,7 +45,7 @@ namespace FinalProject
 
         // Battery system
         private float _batteryPercentage;
-        private readonly float _batteryDrainPerSecond = 5f / 60f; // drains 5% per minute
+        private readonly float _batteryDrainPerSecond = 5f / 60f;
 
         // Collectible batteries
         private List<CollectibleBattery> _collectibleBatteries;
@@ -55,69 +55,125 @@ namespace FinalProject
             : base(GameWindowSettings.Default, new NativeWindowSettings())
         {
             this.Size = new Vector2i(1920, 1080);
-            this.WindowState = WindowState.Fullscreen; // always fullscreen
+            //this.WindowState = WindowState.Fullscreen;
         }
 
         protected override void OnLoad()
         {
             base.OnLoad();
 
-            GL.Enable(EnableCap.DepthTest); // 3D depth
-            GL.Enable(EnableCap.Blend); // transparency
+            GL.Enable(EnableCap.DepthTest);
+            GL.Enable(EnableCap.Blend);
             GL.BlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.OneMinusSrcAlpha);
 
-            // Load shader and camera
             _shader = new Shader("Assets/Shaders/shader.vert", "Assets/Shaders/shader.frag");
-            _camera = new Camera(Vector3.UnitY * 1.6f, Size.X / (float)Size.Y); // player height view
+            _camera = new Camera(Vector3.UnitY * 1.6f, Size.X / (float)Size.Y);
 
-            // Initialize Skybox
             _skybox = new Skybox(
                 "Assets/Textures/Skybox/sky.png",
                 "Assets/Shaders/skybox_vertex.glsl",
                 "Assets/Shaders/skybox_fragment.glsl"
             );
 
-            // Load world objects
+            // Load meshes
             Mesh ground = new Mesh("Assets/Models/terrain.fbx", _shader,
                 Texture.LoadFromFile("Assets/Textures/dirt.png"), _camera);
-            Mesh sampleTree = new Mesh("Assets/Models/tree12.fbx", _shader,
-                Texture.LoadFromFile("Assets/Textures/tree12.png"), _camera);
-            Mesh car = new Mesh("Assets/Models/car.fbx", _shader, Texture.LoadFromFile("Assets/Textures/car.png"),
-                _camera);
+            Mesh car = new Mesh("Assets/Models/car.fbx", _shader,
+                Texture.LoadFromFile("Assets/Textures/car.png"), _camera);
             Mesh monster = new Mesh("Assets/Models/monster.fbx", _shader,
                 Texture.LoadFromFile("Assets/Textures/monster.png"), _camera);
             Mesh flashlightMesh = new Mesh("Assets/Models/flashlight.fbx", _shader,
                 Texture.LoadFromFile("Assets/Textures/flashlight.png"), _camera);
-
             Mesh batteryMesh = new Mesh("Assets/Models/battery.fbx", _shader,
                 Texture.LoadFromFile("Assets/Textures/battery.png"), _camera);
 
-            _flashlightModel = new FlashlightObject(flashlightMesh);
+            // Load trees and bushes (only if files exist)
+            List<Mesh> treeMeshes = new List<Mesh>();
+            List<Mesh> bushMeshes = new List<Mesh>();
 
+            // Try loading each tree type
+            var treeFiles = new[] {
+                ("Assets/Models/tree.fbx", "Assets/Textures/tree.png"),
+                ("Assets/Models/tree01.fbx", "Assets/Textures/tree01.png"),
+                ("Assets/Models/tree02.fbx", "Assets/Textures/tree02.png"),
+                ("Assets/Models/tree03.fbx", "Assets/Textures/tree03.png"),
+                ("Assets/Models/tree12.fbx", "Assets/Textures/tree12.png")
+            };
+
+            foreach (var (model, texture) in treeFiles)
+            {
+                if (File.Exists(model) && File.Exists(texture))
+                {
+                    treeMeshes.Add(new Mesh(model, _shader, Texture.LoadFromFile(texture), _camera));
+                }
+            }
+
+            // Try loading each bush type
+            var bushFiles = new[] {
+                ("Assets/Models/bush01.fbx", "Assets/Textures/bush01.png"),
+                ("Assets/Models/bush02.fbx", "Assets/Textures/bush02.png")
+            };
+
+            foreach (var (model, texture) in bushFiles)
+            {
+                if (File.Exists(model) && File.Exists(texture))
+                {
+                    bushMeshes.Add(new Mesh(model, _shader, Texture.LoadFromFile(texture), _camera));
+                }
+            }
+
+            // Fallback: if no trees loaded, use a default
+            if (treeMeshes.Count == 0)
+            {
+                throw new Exception("No tree models found!");
+            }
+
+            _flashlightModel = new FlashlightObject(flashlightMesh);
             _worldObjects = new List<WorldObject>();
 
-            // Create monster with AI
-            _monsterObject = new WorldObject(monster, new Vector3(5, 1.35f, 10), new Vector3(5f), 0, true);
+            // Add ground (no collision)
+            _worldObjects.Add(new WorldObject(ground, new Vector3(0, 0, 0), new Vector3(2f), 0, false));
+
+            // Add car
+            _worldObjects.Add(new WorldObject(car, _carPosition, new Vector3(0.7f), 0, true));
+
+            // Create monster
+            Vector3 monsterSpawn = new Vector3(5, 1.35f, 10);
+            _monsterObject = new WorldObject(monster, monsterSpawn, new Vector3(5f), 0, true);
             _monsterAI = new MonsterAI(_monsterObject);
             _worldObjects.Add(_monsterObject);
 
-            // Adding ground to our world objects
-            _worldObjects.Add(new WorldObject(ground, new Vector3(0, 0, 0), new Vector3(2f), 0));
+            // PROCEDURAL WORLD GENERATION
+            WorldGenerator worldGen = new WorldGenerator(seed: 12345);
 
-            // Adding sample tree
-            _worldObjects.Add(new WorldObject(sampleTree, new Vector3(2, -0.8f, -5), new Vector3(0.008f), 0, true, new Vector3(0.5f, 10f, 0.5f)));
+            // Define exclusion zones
+            List<Vector3> exclusionZones = new List<Vector3>
+            {
+                Vector3.Zero,      // Player spawn
+                _carPosition,      // Car location
+                monsterSpawn       // Monster spawn
+            };
 
-            _worldObjects.Add(new WorldObject(car, _carPosition, new Vector3(0.7f), 0, true)); // Escape target
-            _worldObjects.Add(new WorldObject(sampleTree, new Vector3(2, -0.8f, -5), new Vector3(0.008f), 0, true,
-                new Vector3(0.5f, 10f, 0.5f))); // tree w/ collision
+            // Generate forest
+            worldGen.GenerateForest(
+                _worldObjects,
+                treeMeshes,
+                bushMeshes,
+                exclusionZones,
+                exclusionRadius: 6.5f,
+                worldSize: 60f
+            );
 
-            // Initialize collectible batteries
+            // Generate batteries
             _collectibleBatteries = new List<CollectibleBattery>();
-
-            // Add multiple batteries at different locations
-            _collectibleBatteries.Add(new CollectibleBattery(batteryMesh, new Vector3(0, 0.5f, -5), new Vector3(0.8f), 40f));
-            _collectibleBatteries.Add(new CollectibleBattery(batteryMesh, new Vector3(-8, 0.5f, 3), new Vector3(0.8f), 35f));
-            _collectibleBatteries.Add(new CollectibleBattery(batteryMesh, new Vector3(10, 0.5f, -8), new Vector3(0.8f), 45f));
+            worldGen.GenerateBatteries(
+                _collectibleBatteries,
+                batteryMesh,
+                count: 50,
+                exclusionZones,
+                exclusionRadius: 6.5f,
+                worldSize: 60f
+            );
 
             // UI setup
             ImGui.CreateContext();
@@ -126,7 +182,7 @@ namespace FinalProject
             ImguiImplOpenTK4.Init(this);
             ImguiImplOpenGL3.Init();
 
-            _batteryPercentage = 100f; // start full
+            _batteryPercentage = 100f;
             GL.ClearColor(0.1f, 0.1f, 0.1f, 1f);
         }
 
@@ -134,12 +190,10 @@ namespace FinalProject
         {
             base.OnRenderFrame(e);
 
-            // Begin new UI frame
             ImguiImplOpenGL3.NewFrame();
             ImguiImplOpenTK4.NewFrame();
             ImGui.NewFrame();
 
-            // Draw correct UI depending on state
             if (!_gameStarted)
                 BuildMainMenuUI();
             else if (_gameEnded)
@@ -149,33 +203,27 @@ namespace FinalProject
 
             GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
 
-            // Draw skybox FIRST
             Matrix4 view = _camera.GetViewMatrix();
             Matrix4 projection = _camera.GetProjectionMatrix();
             _skybox.Draw(view, projection);
 
-            // Update flashlight data to shader
             _shader.Use();
             _shader.SetVector3("flashlight.position", _camera.Position);
             _shader.SetVector3("flashlight.direction", _camera.Front);
             _shader.SetInt("flashlight.enabled", _flashlightEnabled ? 1 : 0);
 
-            // Draw world
             foreach (var obj in _worldObjects)
                 obj.Draw();
 
-            // Draw collectible batteries
             foreach (var battery in _collectibleBatteries)
             {
                 if (!battery.IsCollected)
                     battery.Draw();
             }
 
-            // Draw flashlight mesh in view
             if (_flashlightEnabled)
                 _flashlightModel.Draw();
 
-            // Render ImGui HUD
             ImGui.Render();
             GL.Viewport(0, 0, FramebufferSize.X, FramebufferSize.Y);
             ImguiImplOpenGL3.RenderDrawData(ImGui.GetDrawData());
@@ -191,9 +239,8 @@ namespace FinalProject
             var input = KeyboardState;
 
             if (input.IsKeyDown(Keys.Escape))
-                Close(); // quit
+                Close();
 
-            // Flashlight toggle + battery check
             if (input.IsKeyDown(Keys.F))
             {
                 if (!_fKeyPressed)
@@ -202,59 +249,43 @@ namespace FinalProject
                         _flashlightEnabled = true;
                     else
                         _flashlightEnabled = false;
-
                     _fKeyPressed = true;
                 }
             }
             else _fKeyPressed = false;
 
-            // Battery drains while light is ON
             if (_flashlightEnabled && _batteryPercentage > 0f)
             {
                 _batteryPercentage -= _batteryDrainPerSecond * (float)e.Time * 100f;
                 if (_batteryPercentage <= 0f)
                 {
                     _batteryPercentage = 0f;
-                    _flashlightEnabled = false; // auto shutoff
+                    _flashlightEnabled = false;
                 }
             }
 
             float yaw = MathHelper.DegreesToRadians(_camera.Yaw);
-
             Vector3 forward = new Vector3(MathF.Cos(yaw), 0f, MathF.Sin(yaw));
             forward = Vector3.Normalize(forward);
 
+            // Sprint speed
             if (input.IsKeyDown(Keys.LeftShift))
-            {
-                _cameraSpeed = 4f;
-            }
+                _cameraSpeed = 5f;
             else
-            {
-                _cameraSpeed = 2f;
-            }
+                _cameraSpeed = 3f;
 
             Vector3 oldPosition = _camera.Position;
             Vector3 newPosition = oldPosition;
 
-            // Movement with collision detection
             if (input.IsKeyDown(Keys.W))
-            {
                 newPosition += forward * _cameraSpeed * (float)e.Time;
-            }
             if (input.IsKeyDown(Keys.S))
-            {
                 newPosition -= forward * _cameraSpeed * (float)e.Time;
-            }
             if (input.IsKeyDown(Keys.A))
-            {
                 newPosition -= _camera.Right * _cameraSpeed * (float)e.Time;
-            }
             if (input.IsKeyDown(Keys.D))
-            {
                 newPosition += _camera.Right * _cameraSpeed * (float)e.Time;
-            }
 
-            // Check collision before applying movement
             if (!CheckPlayerCollision(newPosition))
             {
                 _camera.Position = newPosition;
@@ -265,17 +296,11 @@ namespace FinalProject
                 Vector3 tryZ = new Vector3(oldPosition.X, oldPosition.Y, newPosition.Z);
 
                 if (!CheckPlayerCollision(tryX))
-                {
                     _camera.Position = tryX;
-                }
                 else if (!CheckPlayerCollision(tryZ))
-                {
                     _camera.Position = tryZ;
-                }
-                // If both collide, stay at old position
             }
 
-            // Mouse camera look
             var mouse = MouseState;
             if (_firstMove)
             {
@@ -287,43 +312,36 @@ namespace FinalProject
                 var deltaX = mouse.X - _lastPos.X;
                 var deltaY = mouse.Y - _lastPos.Y;
                 _lastPos = new Vector2(mouse.X, mouse.Y);
-
                 _camera.Yaw += deltaX * _sensitivity;
                 _camera.Pitch -= deltaY * _sensitivity;
             }
 
-            // Car proximity check
             float distanceToCar = Vector3.Distance(_camera.Position, _carPosition);
             _nearCar = distanceToCar <= _carTriggerRadius;
 
-            // Battery collection logic
             _nearbyBattery = null;
             foreach (var battery in _collectibleBatteries)
             {
-                battery.Update((float)e.Time); // Update animation
-
+                battery.Update((float)e.Time);
                 if (battery.IsPlayerNearby(_camera.Position))
                 {
                     _nearbyBattery = battery;
-                    break; // Only check one battery at a time
+                    break;
                 }
             }
 
-            // E key handling (prioritize battery over car)
             if (input.IsKeyDown(Keys.E))
             {
                 if (!_eKeyPressed)
                 {
                     if (_nearbyBattery != null)
                     {
-                        // Collect battery
                         _batteryPercentage = MathF.Min(100f, _batteryPercentage + _nearbyBattery.BatteryRechargeAmount);
                         _nearbyBattery.Collect();
                         _nearbyBattery = null;
                     }
                     else if (_nearCar)
                     {
-                        // Enter car
                         _gameEnded = true;
                         CursorState = CursorState.Normal;
                     }
@@ -331,21 +349,16 @@ namespace FinalProject
                 }
             }
             else
-            {
                 _eKeyPressed = false;
-            }
 
-            // Attach flashlight model to camera
             Vector3 flashlightOffset = new Vector3(0.4f, -0.3f, 0.5f);
             _flashlightModel.UpdateFromCamera(_camera, flashlightOffset);
 
-            // Update Monster AI
             _monsterAI.Update((float)e.Time, _camera.Position, _flashlightEnabled);
         }
 
         private bool CheckPlayerCollision(Vector3 position)
         {
-            // Player collision box check against world objects
             BoundingBox playerBox = BoundingBox.FromCenterAndSize(position, new Vector3(0.6f, 1.8f, 0.6f), Vector3.One);
             foreach (var obj in _worldObjects)
                 if (obj.CheckCollision(playerBox))
@@ -357,7 +370,6 @@ namespace FinalProject
         {
             CursorState = CursorState.Normal;
 
-            // Centered title + START + EXIT
             ImGui.SetNextWindowPos(new System.Numerics.Vector2(Size.X * 0.5f, Size.Y * 0.5f), ImGuiCond.Always,
                 new System.Numerics.Vector2(0.5f, 0.5f));
             ImGui.SetNextWindowBgAlpha(0.0f);
@@ -376,7 +388,7 @@ namespace FinalProject
             if (ImGui.Button("Start", new System.Numerics.Vector2(340, 80)))
             {
                 _gameStarted = true;
-                CursorState = CursorState.Grabbed; // lock cursor for FPS controls
+                CursorState = CursorState.Grabbed;
             }
 
             ImGui.Spacing();
@@ -400,38 +412,37 @@ namespace FinalProject
 
         private void BuildInGameUI()
         {
-            // Battery HUD top-left corner
             ImGui.SetNextWindowPos(new System.Numerics.Vector2(12, 12), ImGuiCond.Always);
             ImGui.SetNextWindowBgAlpha(0.0f);
             var flags = ImGuiWindowFlags.NoDecoration | ImGuiWindowFlags.NoBackground | ImGuiWindowFlags.NoMove |
                         ImGuiWindowFlags.AlwaysAutoResize;
 
             ImGui.Begin("BatteryHUD_Frameless", flags);
-
             ImGui.SetWindowFontScale(1.6f);
             ImGui.Text($"Battery left: {(int)MathF.Max(0, _batteryPercentage)}%%");
             ImGui.SetWindowFontScale(1.0f);
-
             ImGui.End();
 
-            // Battery pickup prompt
             if (_nearbyBattery != null)
             {
-                ImGui.SetNextWindowPos(new System.Numerics.Vector2(Size.X * 0.5f, Size.Y * 0.75f), ImGuiCond.Always, new System.Numerics.Vector2(0.5f, 0.5f));
+                ImGui.SetNextWindowPos(new System.Numerics.Vector2(Size.X * 0.5f, Size.Y * 0.75f), ImGuiCond.Always,
+                    new System.Numerics.Vector2(0.5f, 0.5f));
                 ImGui.SetNextWindowBgAlpha(0.0f);
-                flags = ImGuiWindowFlags.NoDecoration | ImGuiWindowFlags.NoBackground | ImGuiWindowFlags.NoMove | ImGuiWindowFlags.AlwaysAutoResize;
+                flags = ImGuiWindowFlags.NoDecoration | ImGuiWindowFlags.NoBackground | ImGuiWindowFlags.NoMove |
+                        ImGuiWindowFlags.AlwaysAutoResize;
                 ImGui.Begin("BatteryPrompt_Frameless", flags);
                 ImGui.SetWindowFontScale(1.8f);
                 ImGui.Text($"Press E to pick up battery (+{(int)_nearbyBattery.BatteryRechargeAmount}%)");
                 ImGui.SetWindowFontScale(1.0f);
                 ImGui.End();
             }
-            // Car entry prompt (only show if no battery nearby)
             else if (_nearCar && !_gameEnded)
             {
-                ImGui.SetNextWindowPos(new System.Numerics.Vector2(Size.X * 0.5f, Size.Y * 0.75f), ImGuiCond.Always, new System.Numerics.Vector2(0.5f, 0.5f));
+                ImGui.SetNextWindowPos(new System.Numerics.Vector2(Size.X * 0.5f, Size.Y * 0.75f), ImGuiCond.Always,
+                    new System.Numerics.Vector2(0.5f, 0.5f));
                 ImGui.SetNextWindowBgAlpha(0.0f);
-                flags = ImGuiWindowFlags.NoDecoration | ImGuiWindowFlags.NoBackground | ImGuiWindowFlags.NoMove | ImGuiWindowFlags.AlwaysAutoResize;
+                flags = ImGuiWindowFlags.NoDecoration | ImGuiWindowFlags.NoBackground | ImGuiWindowFlags.NoMove |
+                        ImGuiWindowFlags.AlwaysAutoResize;
                 ImGui.Begin("EnterPrompt_Frameless", flags);
                 ImGui.SetWindowFontScale(1.8f);
                 ImGui.Text("Press E to enter car");
@@ -442,7 +453,6 @@ namespace FinalProject
 
         private void BuildEndScreenUI()
         {
-            // Final message + Main Menu/Exit
             ImGui.SetNextWindowPos(new System.Numerics.Vector2(Size.X * 0.5f, Size.Y * 0.5f), ImGuiCond.Always,
                 new System.Numerics.Vector2(0.5f, 0.5f));
             ImGui.SetNextWindowBgAlpha(0.0f);
@@ -460,14 +470,12 @@ namespace FinalProject
             ImGui.SetWindowFontScale(1.4f);
             if (ImGui.Button("Main Menu", new System.Numerics.Vector2(220, 60)))
             {
-                // Reset game state
                 _gameEnded = false;
                 _gameStarted = false;
                 CursorState = CursorState.Normal;
                 _batteryPercentage = 100f;
                 _camera.Position = new Vector3(0, 1.6f, 0);
 
-                // Reset all batteries
                 foreach (var battery in _collectibleBatteries)
                 {
                     battery.Reset();
