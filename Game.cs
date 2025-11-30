@@ -35,10 +35,13 @@ namespace FinalProject
         private bool _nearCar = false;
         private bool _eKeyPressed = false;
 
+        private bool _gameLost = false;
+        
         // Pause menu
         private bool _isPaused = false;
         private bool _showSettings = false;
 
+        
         // Settings
         private float _masterVolume = 1.0f;
         private bool _isFullscreen = true;
@@ -208,6 +211,7 @@ namespace FinalProject
         {
             _gameEnded = false;
             _gameStarted = false;
+            _gameLost = false;
             _isPaused = false;
             _batteryPercentage = 100f;
             _flashlightEnabled = false;
@@ -240,6 +244,8 @@ namespace FinalProject
 
             if (!_gameStarted)
                 BuildMainMenuUI();
+            else if (_gameLost)
+                BuildLoseScreenUI();
             else if (_gameEnded)
                 BuildEndScreenUI();
             else if (_isPaused)
@@ -298,7 +304,7 @@ namespace FinalProject
                 }
             }
 
-            if (!_gameStarted || _gameEnded || _isPaused) return;
+            if (!_gameStarted || _gameEnded || _gameLost || _isPaused) return;
 
             if (input.IsKeyDown(Keys.F))
             {
@@ -415,6 +421,13 @@ namespace FinalProject
             _flashlightModel.UpdateFromCamera(_camera, flashlightOffset);
 
             _monsterAI.Update((float)e.Time, _camera.Position, _flashlightEnabled);
+            
+            float distanceToMonster = Vector3.Distance(_camera.Position, _monsterObject.Position);
+            if (distanceToMonster < 1.5f)
+            {
+                _gameLost = true;
+                CursorState = CursorState.Normal;
+            }
         }
 
         private bool CheckPlayerCollision(Vector3 position)
@@ -426,6 +439,52 @@ namespace FinalProject
             return false;
         }
 
+        private void BuildLoseScreenUI()
+    {
+        // Transparent button style
+        ImGui.PushStyleColor(ImGuiCol.Button, new System.Numerics.Vector4(0.2f, 0.2f, 0.2f, 0.3f));
+        ImGui.PushStyleColor(ImGuiCol.ButtonHovered, new System.Numerics.Vector4(0.3f, 0.3f, 0.3f, 0.5f));
+        ImGui.PushStyleColor(ImGuiCol.ButtonActive, new System.Numerics.Vector4(0.4f, 0.4f, 0.4f, 0.7f));
+
+        ImGui.SetNextWindowPos(new System.Numerics.Vector2(Size.X * 0.5f, Size.Y * 0.5f), ImGuiCond.Always,
+            new System.Numerics.Vector2(0.5f, 0.5f));
+        ImGui.SetNextWindowBgAlpha(0.0f);
+        var flags = ImGuiWindowFlags.NoDecoration | ImGuiWindowFlags.NoBackground | ImGuiWindowFlags.NoMove |
+                    ImGuiWindowFlags.AlwaysAutoResize;
+        ImGui.Begin("Lose_Frameless", flags);
+
+        ImGui.SetWindowFontScale(2.6f);
+        ImGui.PushStyleColor(ImGuiCol.Text, new System.Numerics.Vector4(1.0f, 0.2f, 0.2f, 1.0f)); // Red text
+        ImGuiHelpers.TextCentered("YOU DIED");
+        ImGui.PopStyleColor();
+        ImGui.SetWindowFontScale(1.0f);
+
+        ImGui.Spacing();
+        ImGui.Spacing();
+        
+        ImGui.SetWindowFontScale(1.3f);
+        ImGuiHelpers.TextCentered("The monster caught you...");
+        ImGui.SetWindowFontScale(1.0f);
+
+        ImGui.Spacing();
+        ImGui.Spacing();
+
+        ImGui.SetWindowFontScale(1.4f);
+        if (ImGui.Button("Main Menu", new System.Numerics.Vector2(220, 60)))
+        {
+            ResetGameState();
+        }
+
+        ImGui.SameLine();
+        if (ImGui.Button("Exit", new System.Numerics.Vector2(220, 60)))
+            Close();
+        ImGui.SetWindowFontScale(1.0f);
+
+        ImGui.End();
+        
+        ImGui.PopStyleColor(3);
+    }
+        
         private void BuildMainMenuUI()
         {
             CursorState = CursorState.Normal;
