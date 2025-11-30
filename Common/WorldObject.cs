@@ -12,7 +12,7 @@ public class WorldObject
     private readonly bool _hasCollision;
 
     public BoundingBox CollisionBox { get; private set; }
-    
+
     private Vector3? _customCollisionSize;
 
     public WorldObject(Mesh mesh, Vector3 position, Vector3 scale, float rotation,
@@ -55,7 +55,7 @@ public class WorldObject
             );
         }
     }
-    
+
     public void Draw()
     {
         UpdateTransform();
