@@ -18,6 +18,9 @@
     </ItemGroup>
 
     <ItemGroup>
+      <None Update="Assets\Audio\deep-growl.wav">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </None>
       <None Update="Assets\Models\bush02.fbx">
         <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       </None>
@@ -105,9 +108,6 @@
       <None Update="Assets\Models\battery.fbx">
         <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       </None>
-      <None Update="Assets\Audio\deep-growl.wav">
-        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      </None>
       <None Update="Assets\Audio\walk.wav">
         <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       </None>
@@ -117,10 +117,6 @@
       <None Update="Assets\Audio\car-horn.wav">
         <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       </None>
-    </ItemGroup>
-
-    <ItemGroup>
-      <Folder Include="Assets\Audio\" />
     </ItemGroup>
 
     <ItemGroup>

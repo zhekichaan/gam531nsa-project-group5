@@ -166,7 +166,7 @@ namespace FinalProject.Common
 
             _al.SetSourceProperty(_source, SourceFloat.ReferenceDistance, 1.0f);
             _al.SetSourceProperty(_source, SourceFloat.MaxDistance, distance);
-            _al.SetSourceProperty(_source, SourceFloat.RolloffFactor, 1.0f);
+            _al.SetSourceProperty(_source, SourceFloat.RolloffFactor, 0.3f);
         }
 
         /// <summary>
@@ -217,7 +217,7 @@ namespace FinalProject.Common
                 _al!.GetSourceProperty(_source, SourceFloat.Gain, out float gain);
                 return gain;
             }
-            set => _al!.SetSourceProperty(_source, SourceFloat.Gain, Math.Clamp(value, 0f, 1f));
+            set => _al!.SetSourceProperty(_source, SourceFloat.Gain, Math.Clamp(value, 0f, 10f));
         }
 
         public float Pitch

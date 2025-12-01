@@ -12,3 +12,4 @@ Flashlight: https://elbolilloduro.itch.io/exploration-objects
 Trees + Bushes: https://elegantcrow.itch.io/psx-retro-style-tree-pack   
 Monster: https://retro-spud.itch.io/psx-elk-demon-npc-monster
 Skybox: https://ambientcg.com/view?id=NightSkyHDRI014
+Audio: https://mixkit.co/free-sound-effects/monster/
