@@ -16,8 +16,12 @@ namespace FinalProject
         private Camera _camera;
         private Skybox _skybox;
 
+        private float _initialCameraYaw = 0f;
+        private float _initialCameraPitch = 0f;
+        private Vector3 _initialMonsterPosition;
+
         private float _cameraSpeed = 2f;
-        private readonly float _sensitivity = 0.2f;
+        private float _sensitivity = 0.2f;
 
         private bool _firstMove = true;
         private Vector2 _lastPos;
@@ -30,6 +34,17 @@ namespace FinalProject
 
         private bool _nearCar = false;
         private bool _eKeyPressed = false;
+
+        private bool _gameLost = false;
+        
+        // Pause menu
+        private bool _isPaused = false;
+        private bool _showSettings = false;
+
+        
+        // Settings
+        private float _masterVolume = 1.0f;
+        private bool _isFullscreen = true;
 
         // Monster AI
         private WorldObject _monsterObject;
@@ -75,6 +90,9 @@ namespace FinalProject
                 "Assets/Shaders/skybox_fragment.glsl"
             );
 
+            _initialCameraYaw = _camera.Yaw;
+            _initialCameraPitch = _camera.Pitch;
+
             // Load meshes
             Mesh ground = new Mesh("Assets/Models/terrain.fbx", _shader,
                 Texture.LoadFromFile("Assets/Textures/dirt.png"), _camera);
@@ -92,7 +110,8 @@ namespace FinalProject
             List<Mesh> bushMeshes = new List<Mesh>();
 
             // Try loading each tree type
-            var treeFiles = new[] {
+            var treeFiles = new[]
+            {
                 ("Assets/Models/tree.fbx", "Assets/Textures/tree.png"),
                 ("Assets/Models/tree01.fbx", "Assets/Textures/tree01.png"),
                 ("Assets/Models/tree02.fbx", "Assets/Textures/tree02.png"),
@@ -109,7 +128,8 @@ namespace FinalProject
             }
 
             // Try loading each bush type
-            var bushFiles = new[] {
+            var bushFiles = new[]
+            {
                 ("Assets/Models/bush01.fbx", "Assets/Textures/bush01.png"),
                 ("Assets/Models/bush02.fbx", "Assets/Textures/bush02.png")
             };
@@ -139,6 +159,7 @@ namespace FinalProject
 
             // Create monster
             Vector3 monsterSpawn = new Vector3(5, 1.35f, 10);
+            _initialMonsterPosition = monsterSpawn;
             _monsterObject = new WorldObject(monster, monsterSpawn, new Vector3(5f), 0, true);
             _monsterAI = new MonsterAI(_monsterObject);
             _worldObjects.Add(_monsterObject);
@@ -149,9 +170,9 @@ namespace FinalProject
             // Define exclusion zones
             List<Vector3> exclusionZones = new List<Vector3>
             {
-                Vector3.Zero,      // Player spawn
-                _carPosition,      // Car location
-                monsterSpawn       // Monster spawn
+                Vector3.Zero, // Player spawn
+                _carPosition, // Car location
+                monsterSpawn // Monster spawn
             };
 
             // Generate forest
@@ -186,6 +207,33 @@ namespace FinalProject
             GL.ClearColor(0.1f, 0.1f, 0.1f, 1f);
         }
 
+        private void ResetGameState()
+        {
+            _gameEnded = false;
+            _gameStarted = false;
+            _gameLost = false;
+            _isPaused = false;
+            _batteryPercentage = 100f;
+            _flashlightEnabled = false;
+
+            // Reset camera
+            _camera.Position = new Vector3(0, 1.6f, 0);
+            _camera.Yaw = _initialCameraYaw;
+            _camera.Pitch = _initialCameraPitch;
+            _firstMove = true; // Reset mouse movement
+
+            // Reset monster
+            _monsterObject.Position = _initialMonsterPosition;
+
+            // Reset batteries
+            foreach (var battery in _collectibleBatteries)
+            {
+                battery.Reset();
+            }
+
+            CursorState = CursorState.Normal;
+        }
+
         protected override void OnRenderFrame(FrameEventArgs e)
         {
             base.OnRenderFrame(e);
@@ -196,8 +244,17 @@ namespace FinalProject
 
             if (!_gameStarted)
                 BuildMainMenuUI();
+            else if (_gameLost)
+                BuildLoseScreenUI();
             else if (_gameEnded)
                 BuildEndScreenUI();
+            else if (_isPaused)
+            {
+                if (_showSettings)
+                    BuildSettingsUI();
+                else
+                    BuildPauseMenuUI();
+            }
             else
                 BuildInGameUI();
 
@@ -234,12 +291,20 @@ namespace FinalProject
         protected override void OnUpdateFrame(FrameEventArgs e)
         {
             if (!IsFocused) return;
-            if (!_gameStarted || _gameEnded) return;
 
             var input = KeyboardState;
 
-            if (input.IsKeyDown(Keys.Escape))
-                Close();
+            if (input.IsKeyPressed(Keys.Escape))
+            {
+                if (_gameStarted && !_gameEnded)
+                {
+                    _isPaused = !_isPaused;
+                    _showSettings = false; // Close settings when pausing/unpausing
+                    CursorState = _isPaused ? CursorState.Normal : CursorState.Grabbed;
+                }
+            }
+
+            if (!_gameStarted || _gameEnded || _gameLost || _isPaused) return;
 
             if (input.IsKeyDown(Keys.F))
             {
@@ -345,6 +410,7 @@ namespace FinalProject
                         _gameEnded = true;
                         CursorState = CursorState.Normal;
                     }
+
                     _eKeyPressed = true;
                 }
             }
@@ -355,6 +421,13 @@ namespace FinalProject
             _flashlightModel.UpdateFromCamera(_camera, flashlightOffset);
 
             _monsterAI.Update((float)e.Time, _camera.Position, _flashlightEnabled);
+            
+            float distanceToMonster = Vector3.Distance(_camera.Position, _monsterObject.Position);
+            if (distanceToMonster < 1.5f)
+            {
+                _gameLost = true;
+                CursorState = CursorState.Normal;
+            }
         }
 
         private bool CheckPlayerCollision(Vector3 position)
@@ -366,48 +439,219 @@ namespace FinalProject
             return false;
         }
 
+        private void BuildLoseScreenUI()
+    {
+        // Transparent button style
+        ImGui.PushStyleColor(ImGuiCol.Button, new System.Numerics.Vector4(0.2f, 0.2f, 0.2f, 0.3f));
+        ImGui.PushStyleColor(ImGuiCol.ButtonHovered, new System.Numerics.Vector4(0.3f, 0.3f, 0.3f, 0.5f));
+        ImGui.PushStyleColor(ImGuiCol.ButtonActive, new System.Numerics.Vector4(0.4f, 0.4f, 0.4f, 0.7f));
+
+        ImGui.SetNextWindowPos(new System.Numerics.Vector2(Size.X * 0.5f, Size.Y * 0.5f), ImGuiCond.Always,
+            new System.Numerics.Vector2(0.5f, 0.5f));
+        ImGui.SetNextWindowBgAlpha(0.0f);
+        var flags = ImGuiWindowFlags.NoDecoration | ImGuiWindowFlags.NoBackground | ImGuiWindowFlags.NoMove |
+                    ImGuiWindowFlags.AlwaysAutoResize;
+        ImGui.Begin("Lose_Frameless", flags);
+
+        ImGui.SetWindowFontScale(2.6f);
+        ImGui.PushStyleColor(ImGuiCol.Text, new System.Numerics.Vector4(1.0f, 0.2f, 0.2f, 1.0f)); // Red text
+        ImGuiHelpers.TextCentered("YOU DIED");
+        ImGui.PopStyleColor();
+        ImGui.SetWindowFontScale(1.0f);
+
+        ImGui.Spacing();
+        ImGui.Spacing();
+        
+        ImGui.SetWindowFontScale(1.3f);
+        ImGuiHelpers.TextCentered("The monster caught you...");
+        ImGui.SetWindowFontScale(1.0f);
+
+        ImGui.Spacing();
+        ImGui.Spacing();
+
+        ImGui.SetWindowFontScale(1.4f);
+        if (ImGui.Button("Main Menu", new System.Numerics.Vector2(220, 60)))
+        {
+            ResetGameState();
+        }
+
+        ImGui.SameLine();
+        if (ImGui.Button("Exit", new System.Numerics.Vector2(220, 60)))
+            Close();
+        ImGui.SetWindowFontScale(1.0f);
+
+        ImGui.End();
+        
+        ImGui.PopStyleColor(3);
+    }
+        
         private void BuildMainMenuUI()
         {
             CursorState = CursorState.Normal;
+
+            // Only show main menu if settings is not open
+            if (!_showSettings)
+            {
+                // Transparent button style
+                ImGui.PushStyleColor(ImGuiCol.Button, new System.Numerics.Vector4(0.2f, 0.2f, 0.2f, 0.3f));
+                ImGui.PushStyleColor(ImGuiCol.ButtonHovered, new System.Numerics.Vector4(0.3f, 0.3f, 0.3f, 0.5f));
+                ImGui.PushStyleColor(ImGuiCol.ButtonActive, new System.Numerics.Vector4(0.4f, 0.4f, 0.4f, 0.7f));
+
+                ImGui.SetNextWindowPos(new System.Numerics.Vector2(Size.X * 0.5f, Size.Y * 0.5f), ImGuiCond.Always,
+                    new System.Numerics.Vector2(0.5f, 0.5f));
+                ImGui.SetNextWindowBgAlpha(0.0f);
+                var flags = ImGuiWindowFlags.NoDecoration | ImGuiWindowFlags.NoBackground | ImGuiWindowFlags.NoMove |
+                            ImGuiWindowFlags.AlwaysAutoResize;
+                ImGui.Begin("MainMenu_Frameless", flags);
+
+                ImGui.SetWindowFontScale(2.2f);
+                ImGuiHelpers.TextCentered("Final Project");
+                ImGui.SetWindowFontScale(1.0f);
+
+                ImGui.Spacing();
+                ImGui.Spacing();
+
+                ImGui.SetWindowFontScale(1.5f);
+                if (ImGui.Button("Start", new System.Numerics.Vector2(340, 80)))
+                {
+                    _gameStarted = true;
+                    _firstMove = true; // Reset mouse on game start
+                    CursorState = CursorState.Grabbed;
+                }
+
+                ImGui.Spacing();
+                if (ImGui.Button("Settings", new System.Numerics.Vector2(340, 80)))
+                {
+                    _showSettings = true;
+                }
+
+                ImGui.Spacing();
+                if (ImGui.Button("Exit", new System.Numerics.Vector2(340, 80)))
+                    Close();
+                ImGui.SetWindowFontScale(1.0f);
+
+                ImGui.End();
+
+                ImGui.PopStyleColor(3);
+            }
+
+            // Show settings if opened from main menu
+            if (_showSettings && !_gameStarted)
+            {
+                BuildSettingsUI();
+            }
+        }
+
+        private void BuildPauseMenuUI()
+        {
+            // Transparent button style
+            ImGui.PushStyleColor(ImGuiCol.Button, new System.Numerics.Vector4(0.2f, 0.2f, 0.2f, 0.3f));
+            ImGui.PushStyleColor(ImGuiCol.ButtonHovered, new System.Numerics.Vector4(0.3f, 0.3f, 0.3f, 0.5f));
+            ImGui.PushStyleColor(ImGuiCol.ButtonActive, new System.Numerics.Vector4(0.4f, 0.4f, 0.4f, 0.7f));
 
             ImGui.SetNextWindowPos(new System.Numerics.Vector2(Size.X * 0.5f, Size.Y * 0.5f), ImGuiCond.Always,
                 new System.Numerics.Vector2(0.5f, 0.5f));
             ImGui.SetNextWindowBgAlpha(0.0f);
             var flags = ImGuiWindowFlags.NoDecoration | ImGuiWindowFlags.NoBackground | ImGuiWindowFlags.NoMove |
                         ImGuiWindowFlags.AlwaysAutoResize;
-            ImGui.Begin("MainMenu_Frameless", flags);
+            ImGui.Begin("PauseMenu_Frameless", flags);
 
             ImGui.SetWindowFontScale(2.2f);
-            ImGuiHelpers.TextCentered("Final Project");
+            ImGuiHelpers.TextCentered("PAUSED");
             ImGui.SetWindowFontScale(1.0f);
 
             ImGui.Spacing();
             ImGui.Spacing();
 
             ImGui.SetWindowFontScale(1.5f);
-            if (ImGui.Button("Start", new System.Numerics.Vector2(340, 80)))
+            if (ImGui.Button("Continue", new System.Numerics.Vector2(340, 80)))
             {
-                _gameStarted = true;
+                _isPaused = false;
+                _firstMove = true; // Reset mouse on unpause
                 CursorState = CursorState.Grabbed;
             }
 
             ImGui.Spacing();
-            if (ImGui.Button("Exit", new System.Numerics.Vector2(340, 80)))
+            if (ImGui.Button("Settings", new System.Numerics.Vector2(340, 80)))
+            {
+                _showSettings = true;
+            }
+
+            ImGui.Spacing();
+            if (ImGui.Button("Main Menu", new System.Numerics.Vector2(340, 80)))
+            {
+                ResetGameState(); // Use helper method
+            }
+
+            ImGui.Spacing();
+            if (ImGui.Button("Exit Game", new System.Numerics.Vector2(340, 80)))
                 Close();
             ImGui.SetWindowFontScale(1.0f);
 
             ImGui.End();
+
+            ImGui.PopStyleColor(3);
         }
 
-        private static class ImGuiHelpers
+        private void BuildSettingsUI()
         {
-            public static void TextCentered(string text)
+            // Transparent style
+            ImGui.PushStyleColor(ImGuiCol.Button, new System.Numerics.Vector4(0.2f, 0.2f, 0.2f, 0.3f));
+            ImGui.PushStyleColor(ImGuiCol.ButtonHovered, new System.Numerics.Vector4(0.3f, 0.3f, 0.3f, 0.5f));
+            ImGui.PushStyleColor(ImGuiCol.ButtonActive, new System.Numerics.Vector4(0.4f, 0.4f, 0.4f, 0.7f));
+            ImGui.PushStyleColor(ImGuiCol.FrameBg, new System.Numerics.Vector4(0.2f, 0.2f, 0.2f, 0.3f));
+            ImGui.PushStyleColor(ImGuiCol.FrameBgHovered, new System.Numerics.Vector4(0.3f, 0.3f, 0.3f, 0.5f));
+            ImGui.PushStyleColor(ImGuiCol.FrameBgActive, new System.Numerics.Vector4(0.4f, 0.4f, 0.4f, 0.7f));
+
+            ImGui.SetNextWindowPos(new System.Numerics.Vector2(Size.X * 0.5f, Size.Y * 0.5f), ImGuiCond.Always,
+                new System.Numerics.Vector2(0.5f, 0.5f));
+            ImGui.SetNextWindowBgAlpha(0.0f);
+            var flags = ImGuiWindowFlags.NoDecoration | ImGuiWindowFlags.NoBackground | ImGuiWindowFlags.NoMove |
+                        ImGuiWindowFlags.AlwaysAutoResize;
+            ImGui.Begin("Settings_Frameless", flags);
+
+            ImGui.SetWindowFontScale(2.0f);
+            ImGuiHelpers.TextCentered("SETTINGS");
+            ImGui.SetWindowFontScale(1.0f);
+
+            ImGui.Spacing();
+            ImGui.Spacing();
+
+            ImGui.SetWindowFontScale(1.3f);
+
+            // Sensitivity slider
+            ImGui.Text("Mouse Sensitivity");
+            ImGui.SliderFloat("##sensitivity", ref _sensitivity, 0.05f, 1.0f);
+
+            ImGui.Spacing();
+
+            // Volume slider
+            ImGui.Text("Master Volume");
+            ImGui.SliderFloat("##volume", ref _masterVolume, 0.0f, 1.0f);
+
+            ImGui.Spacing();
+
+            // Fullscreen toggle
+            ImGui.Text("Fullscreen");
+            if (ImGui.Checkbox("##fullscreen", ref _isFullscreen))
             {
-                var windowWidth = ImGui.GetWindowWidth();
-                var textWidth = ImGui.CalcTextSize(text).X;
-                ImGui.SetCursorPosX((windowWidth - textWidth) * 0.5f);
-                ImGui.Text(text);
+                WindowState = _isFullscreen ? WindowState.Fullscreen : WindowState.Normal;
             }
+
+            ImGui.Spacing();
+            ImGui.Spacing();
+
+            ImGui.SetWindowFontScale(1.5f);
+            if (ImGui.Button("Back", new System.Numerics.Vector2(340, 60)))
+            {
+                _showSettings = false;
+            }
+
+            ImGui.SetWindowFontScale(1.0f);
+
+            ImGui.End();
+
+            ImGui.PopStyleColor(6);
         }
 
         private void BuildInGameUI()
@@ -453,6 +697,11 @@ namespace FinalProject
 
         private void BuildEndScreenUI()
         {
+            // Transparent button style
+            ImGui.PushStyleColor(ImGuiCol.Button, new System.Numerics.Vector4(0.2f, 0.2f, 0.2f, 0.3f));
+            ImGui.PushStyleColor(ImGuiCol.ButtonHovered, new System.Numerics.Vector4(0.3f, 0.3f, 0.3f, 0.5f));
+            ImGui.PushStyleColor(ImGuiCol.ButtonActive, new System.Numerics.Vector4(0.4f, 0.4f, 0.4f, 0.7f));
+
             ImGui.SetNextWindowPos(new System.Numerics.Vector2(Size.X * 0.5f, Size.Y * 0.5f), ImGuiCond.Always,
                 new System.Numerics.Vector2(0.5f, 0.5f));
             ImGui.SetNextWindowBgAlpha(0.0f);
@@ -470,16 +719,7 @@ namespace FinalProject
             ImGui.SetWindowFontScale(1.4f);
             if (ImGui.Button("Main Menu", new System.Numerics.Vector2(220, 60)))
             {
-                _gameEnded = false;
-                _gameStarted = false;
-                CursorState = CursorState.Normal;
-                _batteryPercentage = 100f;
-                _camera.Position = new Vector3(0, 1.6f, 0);
-
-                foreach (var battery in _collectibleBatteries)
-                {
-                    battery.Reset();
-                }
+                ResetGameState(); // Use helper method
             }
 
             ImGui.SameLine();
@@ -488,6 +728,19 @@ namespace FinalProject
             ImGui.SetWindowFontScale(1.0f);
 
             ImGui.End();
+
+            ImGui.PopStyleColor(3);
+        }
+
+        private static class ImGuiHelpers
+        {
+            public static void TextCentered(string text)
+            {
+                var windowWidth = ImGui.GetWindowWidth();
+                var textWidth = ImGui.CalcTextSize(text).X;
+                ImGui.SetCursorPosX((windowWidth - textWidth) * 0.5f);
+                ImGui.Text(text);
+            }
         }
     }
 }
