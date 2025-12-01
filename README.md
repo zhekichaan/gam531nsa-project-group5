@@ -12,3 +12,6 @@ Flashlight: https://elbolilloduro.itch.io/exploration-objects
 Trees + Bushes: https://elegantcrow.itch.io/psx-retro-style-tree-pack   
 Monster: https://retro-spud.itch.io/psx-elk-demon-npc-monster
 Growl Audio: https://pixabay.com/sound-effects/deep-growl-81171/
+Walking Audio: https://pixabay.com/sound-effects/walking-through-leaves-44621/
+Run Audio: https://pixabay.com/sound-effects/running-on-dry-leaves-295847/
+Car Horn Audio: https://pixabay.com/sound-effects/double-car-horn-352443/

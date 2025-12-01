@@ -46,6 +46,10 @@ namespace FinalProject
         private readonly float _batteryDrainPerSecond = 5f / 60f; // drains 5% per minute
 
         private AudioComponent _monsterGrowl;
+        private AudioComponent _walkSound;
+        private AudioComponent _runSound;
+        private AudioComponent _carHorn;
+        private bool _playedCarHorn = false;
 
         public Game()
             : base(GameWindowSettings.Default, new NativeWindowSettings())
@@ -118,13 +122,17 @@ namespace FinalProject
 
             AudioComponent.InitializeAudio();
             _monsterGrowl = new AudioComponent("Assets/Audio/deep-growl.wav", _monsterObject.Position, 100);
-            _monsterGrowl.Looping = true;
-            _monsterGrowl.Play();
+            _walkSound = new AudioComponent("Assets/Audio/walk.wav", _camera.Position, 10);
+            _runSound = new AudioComponent("Assets/Audio/run.wav", _camera.Position, 10);
+            _carHorn = new AudioComponent("Assets/Audio/car-horn.wav", _carPosition, 10);
         }
 
         protected override void OnUnload()
         {
             base.OnUnload();
+            _walkSound.Dispose();
+            _runSound.Dispose();
+            _carHorn.Dispose();
             _monsterGrowl.Dispose();
             AudioComponent.ShutdownAudio();
         }
@@ -217,9 +225,14 @@ namespace FinalProject
             Vector3 forward = new Vector3(MathF.Cos(yaw), 0f, MathF.Sin(yaw));
             forward = Vector3.Normalize(forward);
 
+
+            bool isWalking = false;
+            bool isRunning = false;
+
             if (input.IsKeyDown(Keys.LeftShift))
             {
                 _cameraSpeed = 4f;
+                isRunning = true;
             }
             else
             {
@@ -229,22 +242,27 @@ namespace FinalProject
             Vector3 oldPosition = _camera.Position;
             Vector3 newPosition = oldPosition;
 
+
             // Movement with collision detection
             if (input.IsKeyDown(Keys.W))
             {
                 newPosition += forward * _cameraSpeed * (float)e.Time;
+                isWalking = true;
             }
             if (input.IsKeyDown(Keys.S))
             {
                 newPosition -= forward * _cameraSpeed * (float)e.Time;
+                isWalking = true;
             }
             if (input.IsKeyDown(Keys.A))
             {
                 newPosition -= _camera.Right * _cameraSpeed * (float)e.Time;
+                isWalking = true;
             }
             if (input.IsKeyDown(Keys.D))
             {
                 newPosition += _camera.Right * _cameraSpeed * (float)e.Time;
+                isWalking = true;
             }
 
             // Check collision before applying movement
@@ -268,7 +286,51 @@ namespace FinalProject
                 // If both collide, stay at old position
             }
 
+            { // walking / running audio
+                _walkSound.Position = _camera.Position;
+                _runSound.Position = _camera.Position;
 
+                if (isWalking)
+                {
+                    if (isRunning)
+                    {
+                        if (_walkSound.IsPlaying)
+                        {
+                            _walkSound.Stop();
+                        }
+                        if (!_runSound.IsPlaying)
+                        {
+                            _runSound.Play();
+                        }
+                    }
+                    else
+                    {
+                        if (_runSound.IsPlaying)
+                        {
+                            _runSound.Stop();
+                        }
+                        if (!_walkSound.IsPlaying)
+                        {
+                            _walkSound.Play();
+                        }
+                    }
+
+                }
+                else
+                {
+                    if (_runSound.IsPlaying)
+                    {
+                        _runSound.Stop();
+                    }
+                    if (_walkSound.IsPlaying)
+                    {
+                        _walkSound.Stop();
+                    }
+                }
+            }
+
+
+            
             // Mouse camera look
             var mouse = MouseState;
             if (_firstMove)
@@ -311,11 +373,11 @@ namespace FinalProject
             Vector3 flashlightOffset = new Vector3(0.4f, -0.3f, 0.5f);
             _flashlightModel.UpdateFromCamera(_camera, flashlightOffset);
 
-            // Update Monster AI
-            _monsterAI.Update((float)e.Time, _camera.Position, _flashlightEnabled);
-
             AudioComponent.UpdateUserAudioLocationFromCamera(_camera);
+
+            // Update Monster AI
             _monsterGrowl.Position = _monsterObject.Position;
+            _monsterAI.Update((float)e.Time, _camera.Position, _flashlightEnabled, _monsterGrowl);
         }
 
         private bool CheckPlayerCollision(Vector3 position)
@@ -391,6 +453,11 @@ namespace FinalProject
             // Big center prompt when close to the car
             if (_nearCar && !_gameEnded)
             {
+                if(!_playedCarHorn && !_carHorn.IsPlaying)
+                {
+                    _playedCarHorn = true;
+                    _carHorn.Play();
+                }
                 ImGui.SetNextWindowPos(new System.Numerics.Vector2(Size.X * 0.5f, Size.Y * 0.75f), ImGuiCond.Always, new System.Numerics.Vector2(0.5f, 0.5f));
                 ImGui.SetNextWindowBgAlpha(0.0f);
                 flags = ImGuiWindowFlags.NoDecoration | ImGuiWindowFlags.NoBackground | ImGuiWindowFlags.NoMove | ImGuiWindowFlags.AlwaysAutoResize;
@@ -399,6 +466,11 @@ namespace FinalProject
                 ImGui.Text("Press E to enter car");
                 ImGui.SetWindowFontScale(1.0f);
                 ImGui.End();
+            }
+
+            if(!_nearCar)
+            {
+                _playedCarHorn = false;
             }
 
             ImGui.End();
