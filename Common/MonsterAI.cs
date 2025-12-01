@@ -17,18 +17,18 @@ namespace FinalProject
         private WorldObject _monsterObject;
         private MonsterState _currentState;
 
-        // Movement speeds
-        private const float PATROL_SPEED = 0.8f;
-        private const float ATTRACTED_SPEED = 1.5f;
-        private const float HUNTING_SPEED = 1.2f;
-        private const float CHASE_SPEED = 3.5f;
+        // Movement speeds (adjustable)
+        public float PatrolSpeed = 0.8f;
+        public float AttractedSpeed = 1.5f;
+        public float HuntingSpeed = 1.2f;
+        public float ChaseSpeed = 3.5f;
 
         // Rotation speed
         private const float ROTATION_SPEED = 180f;
 
         // Detection ranges
-        private const float LIGHT_DETECTION_RANGE = 25f;
-        private const float VISUAL_DETECTION_RANGE = 8f;
+        private const float LIGHT_DETECTION_RANGE = 40f;
+        private const float VISUAL_DETECTION_RANGE = 15f;
         private const float VISUAL_DETECTION_ANGLE = 60f; //cone in front)
 
 
@@ -196,7 +196,7 @@ namespace FinalProject
             {
                 // Move toward patrol point
                 Vector3 direction = Vector3.Normalize(directionToTarget);
-                _monsterObject.Position += direction * PATROL_SPEED * deltaTime;
+                _monsterObject.Position += direction * PatrolSpeed * deltaTime;
 
                 // Smooth rotate to face movement direction
                 SmoothRotateTowards(direction, deltaTime);
@@ -215,7 +215,7 @@ namespace FinalProject
             if (distanceToPlayer > 1.5f)
             {
                 Vector3 direction = Vector3.Normalize(directionToPlayer);
-                _monsterObject.Position += direction * ATTRACTED_SPEED * deltaTime;
+                _monsterObject.Position += direction * AttractedSpeed * deltaTime;
 
                 // Smooth rotate to face player
                 SmoothRotateTowards(direction, deltaTime);
@@ -245,7 +245,7 @@ namespace FinalProject
             {
                 // Move toward last known position
                 Vector3 direction = Vector3.Normalize(directionToTarget);
-                _monsterObject.Position += direction * HUNTING_SPEED * deltaTime;
+                _monsterObject.Position += direction * HuntingSpeed * deltaTime;
                 SmoothRotateTowards(direction, deltaTime);
             }
         }
@@ -262,7 +262,7 @@ namespace FinalProject
             if (distanceToPlayer > 1.0f)
             {
                 Vector3 direction = Vector3.Normalize(directionToPlayer);
-                _monsterObject.Position += direction * CHASE_SPEED * deltaTime;
+                _monsterObject.Position += direction * ChaseSpeed * deltaTime;
                 SmoothRotateTowards(direction, deltaTime);
             }
             else

@@ -1,4 +1,8 @@
 #version 330 core
+
+uniform vec3 cameraPos;
+uniform float fogDensity;
+
 struct Material {
     sampler2D diffuse;
 };
@@ -34,7 +38,7 @@ void main()
         discard;
 
     // Ambient
-    vec3 ambient = light.ambient * texColor.rgb;
+    vec3 ambient = light.ambient * texColor.rgb * 0.15; 
 
     // Diffuse from main light
     vec3 norm = normalize(Normal);
@@ -62,17 +66,46 @@ void main()
             
             // Attenuation (stronger falloff for shorter distance)
             float flashDistance = length(flashlight.position - FragPos);
-            float flashAttenuation = 1.0 / (1.0 + 0.3 * flashDistance + 0.15 * flashDistance * flashDistance);
+            float flashAttenuation = 1.0 / (1.0 + 0.09 * flashDistance + 0.02 * flashDistance * flashDistance);
             
             // Smooth edge (soft spotlight effect)
             float epsilon = cutOff - outerCutOff;
             float intensity = clamp((theta - outerCutOff) / epsilon, 0.0, 1.0);
             
-            flashlightContribution = vec3(1.2, 1.2, 1.1) * flashDiff * flashAttenuation * intensity * texColor.rgb * 1.5;
+            flashlightContribution = vec3(2.5, 2.5, 2.3) 
+                        * flashDiff 
+                        * flashAttenuation 
+                        * intensity 
+                        * texColor.rgb 
+                        * 1;
         }
     }
 
     vec3 result = ambient + diffuse + flashlightContribution;
 
-    FragColor = vec4(result, texColor.a);
+    // Fog
+    // Distance from camera
+    float dist = length(FragPos - cameraPos);
+
+    // Fog factor (exp2)
+    float fogFactor = exp(-pow(dist * fogDensity, 2.0));
+    fogFactor = clamp(fogFactor, 0.0, 1.0);
+
+    // Fog color (near-black)
+    vec3 fogColor = vec3(0.03, 0.03, 0.03);
+
+    // Let flashlight reduce fog when shining at object
+    if (flashlight.enabled == 1) {
+        vec3 toPixel = normalize(FragPos - flashlight.position);
+        float beam = dot(toPixel, normalize(-flashlight.direction));
+
+        if (beam > 0.7) {
+            fogFactor = clamp(fogFactor + beam * 1.2, 0.0, 1.0);
+        }
+    }
+
+    // Combine fog with scene
+    vec3 finalColor = mix(fogColor, result, fogFactor);
+
+    FragColor = vec4(finalColor, texColor.a);
 }

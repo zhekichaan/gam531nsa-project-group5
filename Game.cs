@@ -36,7 +36,10 @@ namespace FinalProject
         private bool _eKeyPressed = false;
 
         private bool _gameLost = false;
-        
+
+        private const float WORLD_MIN = -60f;
+        private const float WORLD_MAX = 60f;
+
         // Pause menu
         private bool _isPaused = false;
         private bool _showSettings = false;
@@ -60,17 +63,25 @@ namespace FinalProject
 
         // Battery system
         private float _batteryPercentage;
-        private readonly float _batteryDrainPerSecond = 5f / 60f;
+        private readonly float _batteryDrainPerSecond = 0.5f / 60f;
 
         // Collectible batteries
         private List<CollectibleBattery> _collectibleBatteries;
         private CollectibleBattery _nearbyBattery = null;
 
+        // Audio
         private AudioComponent _monsterGrowl;
         private AudioComponent _walkSound;
         private AudioComponent _runSound;
         private AudioComponent _carHorn;
         private bool _playedCarHorn = false;
+
+        // Stamina system
+        private float _stamina = 100f;
+        private float _maxStamina = 100f;
+        private float _staminaDrain = 15f;   // slower drain
+        private float _staminaRegen = 30f;   // slower regen
+        private bool _isSprinting = false;
 
         public Game()
             : base(GameWindowSettings.Default, new NativeWindowSettings())
@@ -78,6 +89,27 @@ namespace FinalProject
             this.Size = new Vector2i(1920, 1080);
             this.WindowState = WindowState.Fullscreen;
         }
+
+        // Randomly spawn player on outskirts of the map
+        private Vector3 RandomPlayerSpawn()
+        {
+            Random rng = new Random();
+
+            float worldSize = 60f;
+            float outskirtsMin = worldSize * 0.75f;  // 75% away from center
+            float outskirtsMax = worldSize * 0.90f;  // 90% away from center
+
+            // Pick a random angle (circle around the map)
+            float angle = (float)(rng.NextDouble() * MathF.Tau);
+
+            // Random radius between outskirtsMin and outskirtsMax
+            float radius = outskirtsMin + (float)rng.NextDouble() * (outskirtsMax - outskirtsMin);
+            float x = MathF.Cos(angle) * radius;
+            float z = MathF.Sin(angle) * radius;
+
+            return new Vector3(x, 1.6f, z);
+        }
+
 
         protected override void OnLoad()
         {
@@ -88,7 +120,12 @@ namespace FinalProject
             GL.BlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.OneMinusSrcAlpha);
 
             _shader = new Shader("Assets/Shaders/shader.vert", "Assets/Shaders/shader.frag");
+
+            // Create camera first
             _camera = new Camera(Vector3.UnitY * 1.6f, Size.X / (float)Size.Y);
+
+            // Spawn player randomly on the outskirts
+            _camera.Position = RandomPlayerSpawn();
 
             _skybox = new Skybox(
                 "Assets/Textures/Skybox/sky.png",
@@ -170,6 +207,12 @@ namespace FinalProject
             _monsterAI = new MonsterAI(_monsterObject);
             _worldObjects.Add(_monsterObject);
 
+            // Monster speed
+            _monsterAI.ChaseSpeed = 4f;
+            _monsterAI.HuntingSpeed = 2.2f;
+            _monsterAI.AttractedSpeed = 2.8f;
+            _monsterAI.PatrolSpeed = 1.1f;
+
             // PROCEDURAL WORLD GENERATION
             WorldGenerator worldGen = new WorldGenerator(seed: 12345);
 
@@ -187,7 +230,7 @@ namespace FinalProject
                 treeMeshes,
                 bushMeshes,
                 exclusionZones,
-                exclusionRadius: 6f,
+                exclusionRadius: 3f,
                 worldSize: 60f
             );
 
@@ -198,7 +241,7 @@ namespace FinalProject
                 batteryMesh,
                 count: 20,
                 exclusionZones,
-                exclusionRadius: 6f,
+                exclusionRadius: 2f,
                 worldSize: 60f
             );
 
@@ -286,7 +329,11 @@ namespace FinalProject
             Matrix4 projection = _camera.GetProjectionMatrix();
             _skybox.Draw(view, projection);
 
+            // Fog
             _shader.Use();
+            _shader.SetVector3("cameraPos", _camera.Position);
+            _shader.SetFloat("fogDensity", 0.045f);
+
             _shader.SetVector3("flashlight.position", _camera.Position);
             _shader.SetVector3("flashlight.direction", _camera.Front);
             _shader.SetInt("flashlight.enabled", _flashlightEnabled ? 1 : 0);
@@ -358,13 +405,21 @@ namespace FinalProject
 
             bool isWalking = false;
             bool isRunning = false;
-            // Sprint speed
-            if (input.IsKeyDown(Keys.LeftShift)) {
-                _cameraSpeed = 5f;
+
+            // Stamina based sprinting
+            _isSprinting = false;
+
+            if (input.IsKeyDown(Keys.LeftShift) && _stamina > 0f)
+            {
+                // Sprinting allowed
+                _isSprinting = true;
+                _cameraSpeed = 6.5f;
                 isRunning = true;
             }
-            else {
-                _cameraSpeed = 3f;
+            else
+            {
+                // Walking only
+                _cameraSpeed = 3.5f;
             }
 
             Vector3 oldPosition = _camera.Position;
@@ -507,21 +562,66 @@ namespace FinalProject
             // Update Monster AI
             _monsterGrowl.Position = _monsterObject.Position;
             _monsterAI.Update((float)e.Time, _camera.Position, _flashlightEnabled, _monsterGrowl);
-            
+
+            float dist = Vector3.Distance(_camera.Position, _monsterObject.Position);
+
+            // Volume curve: louder when closer
+            float loudness = MathHelper.Clamp(2.5f - (dist / 6f), 0.2f, 3.0f);
+
+            // Boost loudness when chasing
+            if (_monsterAI.CurrentState == MonsterState.Chasing)
+                loudness = 10.0f;
+
+            _monsterGrowl.Volume = loudness;
+
             float distanceToMonster = Vector3.Distance(_camera.Position, _monsterObject.Position);
             if (distanceToMonster < 1.5f)
             {
                 _gameLost = true;
                 CursorState = CursorState.Normal;
             }
+
+            // Stamina update
+            if (_isSprinting)
+            {
+                _stamina -= _staminaDrain * (float)e.Time;
+                if (_stamina <= 0f)
+                {
+                    _stamina = 0f;
+                    _isSprinting = false; // force stop sprinting
+                }
+            }
+            else
+            {
+                _stamina += _staminaRegen * (float)e.Time;
+                if (_stamina > _maxStamina)
+                    _stamina = _maxStamina;
+            }
         }
 
         private bool CheckPlayerCollision(Vector3 position)
         {
-            BoundingBox playerBox = BoundingBox.FromCenterAndSize(position, new Vector3(0.6f, 1.8f, 0.6f), Vector3.One);
+
+            // World bounds
+            if (position.X < WORLD_MIN ||
+                position.X > WORLD_MAX ||
+                position.Z < WORLD_MIN ||
+                position.Z > WORLD_MAX)
+            {
+                return true; // treat as collision
+            }
+
+            // Object collisions
+            BoundingBox playerBox = BoundingBox.FromCenterAndSize(
+                position,
+                new Vector3(0.6f, 1.8f, 0.6f),
+                Vector3.One
+            );
+
             foreach (var obj in _worldObjects)
                 if (obj.CheckCollision(playerBox))
                     return true;
+
             return false;
         }
 
@@ -751,6 +851,42 @@ namespace FinalProject
             ImGui.SetWindowFontScale(1.6f);
             ImGui.Text($"Battery left: {(int)MathF.Max(0, _batteryPercentage)}%%");
             ImGui.SetWindowFontScale(1.0f);
+            ImGui.End();
+
+            // Stamina bar UI
+            ImGui.SetNextWindowPos(new System.Numerics.Vector2(12, 55), ImGuiCond.Always);
+            ImGui.SetNextWindowBgAlpha(0.0f);
+
+            ImGui.Begin("StaminaHUD_Frameless", flags);
+
+            float staminaPercent = _stamina / _maxStamina;
+
+            // Choose color based on stamina level
+            System.Numerics.Vector4 barColor;
+
+            if (staminaPercent < 0.15f)
+            {
+                // Critical - Red
+                barColor = new System.Numerics.Vector4(1f, 0.1f, 0.1f, 1f);
+            }
+            else if (staminaPercent < 0.40f)
+            {
+                // Low - Yellow
+                barColor = new System.Numerics.Vector4(1f, 0.9f, 0.1f, 1f);
+            }
+            else
+            {
+                // Normal - Green
+                barColor = new System.Numerics.Vector4(0.1f, 1f, 0.1f, 1f);
+            }
+
+            ImGui.Text("Stamina");
+
+            // Apply the chosen bar color
+            ImGui.PushStyleColor(ImGuiCol.PlotHistogram, barColor);
+            ImGui.ProgressBar(staminaPercent, new System.Numerics.Vector2(220, 20), "");
+            ImGui.PopStyleColor();
+
             ImGui.End();
 
             if (_nearbyBattery != null)
