@@ -1,5 +1,6 @@
 ﻿using FinalProject.Common;
 using OpenTK.Mathematics;
+using System;
 
 namespace FinalProject
 {
@@ -50,6 +51,8 @@ namespace FinalProject
         // Flashlight tracking
         private bool _wasFlashlightOn;
 
+        private Random random;
+
         public MonsterState CurrentState => _currentState;
 
         public MonsterAI(WorldObject monsterObject)
@@ -59,13 +62,15 @@ namespace FinalProject
             _random = new Random();
             _patrolTarget = GenerateRandomPatrolPoint();
             _wasFlashlightOn = false;
+            random = new Random();
         }
 
-        public void Update(float deltaTime, Vector3 playerPosition, bool flashlightOn)
+        public void Update(float deltaTime, Vector3 playerPosition, bool flashlightOn, AudioComponent growl)
         {
             Vector3 monsterPosition = _monsterObject.Position;
             float distanceToPlayer = Vector3.Distance(monsterPosition, playerPosition);
 
+            double rng = random.NextDouble();
 
             HandleStateTransitions(playerPosition, flashlightOn, distanceToPlayer);
 
@@ -85,6 +90,10 @@ namespace FinalProject
                     break;
 
                 case MonsterState.Chasing:
+                    if(!growl.IsPlaying)
+                    {
+                        growl.Play();
+                    }
                     UpdateChasing(deltaTime, playerPosition);
                     break;
             }
