@@ -83,9 +83,6 @@ public class Shader
         return GL.GetAttribLocation(Handle, attribName);
     }
 
-    /// <summary>
-    /// Set a uniform int on this shader.
-    /// </summary>
     /// <param name="name">The name of the uniform</param>
     /// <param name="data">The data to set</param>
     public void SetInt(string name, int data)
@@ -94,9 +91,6 @@ public class Shader
         GL.Uniform1(_uniformLocations[name], data);
     }
 
-    /// <summary>
-    /// Set a uniform float on this shader.
-    /// </summary>
     /// <param name="name">The name of the uniform</param>
     /// <param name="data">The data to set</param>
     public void SetFloat(string name, float data)
@@ -105,9 +99,6 @@ public class Shader
         GL.Uniform1(_uniformLocations[name], data);
     }
 
-    /// <summary>
-    /// Set a uniform Matrix4 on this shader
-    /// </summary>
     /// <param name="name">The name of the uniform</param>
     /// <param name="data">The data to set</param>
     /// <remarks>
@@ -121,9 +112,6 @@ public class Shader
         GL.UniformMatrix4(_uniformLocations[name], true, ref data);
     }
 
-    /// <summary>
-    /// Set a uniform Vector3 on this shader.
-    /// </summary>
     /// <param name="name">The name of the uniform</param>
     /// <param name="data">The data to set</param>
     public void SetVector3(string name, Vector3 data)

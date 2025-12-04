@@ -9,7 +9,6 @@ using System.Runtime.InteropServices;
 
 public unsafe static class ImguiImplOpenGL3
 {
-    // See: https://github.com/ImGuiNET/ImGui.NET/issues/527
     internal struct ImDrawCmd_fixed
     {
         public Vector4 ClipRect;
@@ -46,7 +45,6 @@ public unsafe static class ImguiImplOpenGL3
 
         public int EboHandle;
 
-        // FIXME: ??
         public bool HasPolygonMode;
         public bool HasClipOrigin;
 
@@ -120,7 +118,7 @@ public unsafe static class ImguiImplOpenGL3
         GL.Disable(EnableCap.DepthTest);
         GL.Disable(EnableCap.StencilTest);
         GL.Enable(EnableCap.ScissorTest);
-        // FIXME: check for 3.1
+
         GL.Disable(EnableCap.PrimitiveRestart);
 
         GL.PolygonMode(TriangleFace.FrontAndBack, PolygonMode.Fill);
@@ -136,7 +134,7 @@ public unsafe static class ImguiImplOpenGL3
         float T = drawData.DisplayPos.Y;
         float B = drawData.DisplayPos.Y + drawData.DisplaySize.Y;
         if (clip_origin_lower_left == false)
-            (T, B) = (B, T); // Swap top and bottom if origin is upper left.
+            (T, B) = (B, T);
         Matrix4 mvp = Matrix4.CreateOrthographicOffCenter(L, R, B, T, -1, 1);
         GL.UseProgram(bd->ShaderHandle);
         GL.Uniform1(bd->UniformLocationTex, 0);
@@ -172,7 +170,7 @@ public unsafe static class ImguiImplOpenGL3
         int last_sampler = GL.GetInteger(GetPName.SamplerBinding);
         int last_array_buffer = GL.GetInteger(GetPName.ArrayBufferBinding);
         int last_vao = GL.GetInteger(GetPName.VertexArrayBinding);
-        // OpenGL 3.0 & 3.1 have separate polygon modes for front and back.
+
         Span<int> last_polygon_mode = stackalloc int[2];
         GL.GetInteger(GetPName.PolygonMode, out last_polygon_mode[0]);
         Span<int> last_viewport = stackalloc int[4];
@@ -190,7 +188,7 @@ public unsafe static class ImguiImplOpenGL3
         bool last_enable_depth_test = GL.IsEnabled(EnableCap.DepthTest);
         bool last_enable_stencil_test = GL.IsEnabled(EnableCap.StencilTest);
         bool last_enable_scissor_test = GL.IsEnabled(EnableCap.ScissorTest);
-        // FIXME: Check for >= 3.1
+
         bool last_enable_primitive_restart = GL.IsEnabled(EnableCap.PrimitiveRestart);
 
         int vao = GL.GenVertexArray();
@@ -211,13 +209,12 @@ public unsafe static class ImguiImplOpenGL3
 
             for (int cmd_i = 0; cmd_i < drawList.CmdBuffer.Size; cmd_i++)
             {
-                // FIXME: This is a hack to make 32-bit builds work. See: https://github.com/ImGuiNET/ImGui.NET/issues/527
                 ImDrawCmdPtr_fixed cmdPtr =
                     new ImPtrVector<ImDrawCmdPtr_fixed>(drawList.NativePtr->CmdBuffer, sizeof(ImDrawCmd_fixed))[cmd_i];
                 ref ImDrawCmd_fixed cmd = ref Unsafe.AsRef<ImDrawCmd_fixed>(cmdPtr.NativePtr);
                 if (cmd.UserCallback != 0)
                 {
-                    // FIXME: ...
+
                     nint ImDrawCallback_ResetRenderState = -8;
                     if (cmd.UserCallback == ImDrawCallback_ResetRenderState)
                     {
@@ -275,15 +272,6 @@ public unsafe static class ImguiImplOpenGL3
 
         if (true)
         {
-            // FIXME:
-            // if (bd->HasPolygonMode) {
-            //     if (bd->GlVersion <= 310 || bd->GlProfileIsCompat) {
-            //          glPolygonMode(GL_FRONT, (GLenum)last_polygon_mode[0]);
-            //          glPolygonMode(GL_BACK, (GLenum)last_polygon_mode[1]);
-            //     } else {
-            //          glPolygonMode(GL_FRONT_AND_BACK, (GLenum)last_polygon_mode[0]);
-            //     }
-            // }
             GL.PolygonMode(TriangleFace.FrontAndBack, (PolygonMode)last_polygon_mode[0]);
         }
 
@@ -297,7 +285,7 @@ public unsafe static class ImguiImplOpenGL3
         RendererData* bd = GetBackendData();
 
         ImGuiNative.ImFontAtlas_AddFontDefault(io.Fonts.NativePtr, null);
-        //io.Fonts.AddFontDefault();
+
         io.Fonts.GetTexDataAsRGBA32(out byte* pixels, out int width, out int height);
 
         int last_texture = GL.GetInteger(GetPName.TextureBinding2D);
@@ -517,13 +505,13 @@ public unsafe static class ImguiImplOpenGL3
         fragment_shader = fragment_shader.Insert(0, $"#version {bd->GlslVersion}{Environment.NewLine}");
 
         int vert = GL.CreateShader(ShaderType.VertexShader);
-        // FIXME: Version string...
+
         GL.ShaderSource(vert, vertex_shader);
         GL.CompileShader(vert);
         CheckShader(vert, "vertex shader");
 
         int frag = GL.CreateShader(ShaderType.FragmentShader);
-        // FIXME: Version string...
+
         GL.ShaderSource(frag, fragment_shader);
         GL.CompileShader(frag);
         CheckShader(frag, "fragment shader");

@@ -333,7 +333,7 @@ internal unsafe static class ImguiImplOpenTK4
         {
             ImGuiViewportPtr viewport = platformIO.Viewports[n];
             nint windowPtr = viewport.PlatformHandle;
-            // FIXME:
+
             if (windowPtr == 0)
                 continue;
             NativeWindow window = WindowMap[windowPtr];
@@ -484,7 +484,6 @@ internal unsafe static class ImguiImplOpenTK4
 
         UpdateMouseData();
         UpdateMouseCursor();
-        // UpdateGamepads()
     }
 
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
@@ -511,21 +510,6 @@ internal unsafe static class ImguiImplOpenTK4
     {
         var platformIO = ImGui.GetPlatformIO();
         BackendData* bd = GetBackendData();
-
-        //var a0 = (ImGuiNET.Platform_CreateWindow)Platform_CreateWindow;
-        //var a1 = (ImGuiNET.Platform_DestroyWindow)Platform_DestroyWindow;
-        //var a2 = (ImGuiNET.Platform_ShowWindow)Platform_ShowWindow;
-        //var a3 = (ImGuiNET.Platform_GetWindowPos)Platform_GetWindowPos;
-        //var a4 = (ImGuiNET.Platform_SetWindowPos)Platform_SetWindowPos;
-        //var a5 = (ImGuiNET.Platform_GetWindowSize)Platform_GetWindowSize;
-        //var a6 = (ImGuiNET.Platform_SetWindowSize)Platform_SetWindowSize;
-        //var a7 = (ImGuiNET.Platform_SetWindowTitle)Platform_SetWindowTitle;
-        //var a8 = (ImGuiNET.Platform_SetWindowFocus)Platform_SetWindowFocus;
-        //var a9 = (ImGuiNET.Platform_GetWindowFocus)Platform_GetWindowFocus;
-        //var a10 = (ImGuiNET.Platform_GetWindowMinimized)Platform_GetWindowMinimized;
-        //var a11 = (ImGuiNET.Platform_SetWindowAlpha)Platform_SetWindowAlpha;
-        //var a12 = (ImGuiNET.Platform_RenderWindow)Platform_RenderWindow;
-        //var a13 = (ImGuiNET.Platform_SwapBuffers)Platform_SwapBuffers;
 
         platformIO.Platform_CreateWindow =
             (IntPtr)(delegate* unmanaged[Cdecl]<ImGuiViewportPtr, void>)&Platform_CreateWindow;
@@ -571,12 +555,12 @@ internal unsafe static class ImguiImplOpenTK4
 
     private static void Window_Resize(ResizeEventArgs e)
     {
-        // FIXME: Get the platform handle...?
+        
     }
 
     private static void Window_Move(WindowPositionEventArgs obj)
     {
-        // FIXME: Get the platform handle...?
+        
     }
 
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
@@ -588,7 +572,6 @@ internal unsafe static class ImguiImplOpenTK4
         ViewportData* vd = (ViewportData*)NativeMemory.AllocZeroed((uint)sizeof(ViewportData));
         viewport.PlatformUserData = (IntPtr)vd;
 
-        // FIXME??
         GLFW.WindowHint(WindowHintBool.FocusOnShow, false);
         GLFW.WindowHint(WindowHintBool.Floating, viewport.Flags.HasFlag(ImGuiViewportFlags.TopMost) ? true : false);
         NativeWindow window = new NativeWindow(new NativeWindowSettings()

@@ -31,7 +31,7 @@ namespace FinalProject.Helpers
 
             // Spawn trees
             int treesSpawned = 0;
-            for (int i = 0; i < 600; i++) // More attempts for better coverage
+            for (int i = 0; i < 600; i++) 
             {
                 if (treesSpawned >= 550) break;
 
@@ -102,7 +102,7 @@ namespace FinalProject.Helpers
                         pos,
                         new Vector3(scale),
                         rotation,
-                        false, // No collision
+                        false,
                         new Vector3(0.5f, 2f, 0.5f)
                     ));
 

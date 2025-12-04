@@ -31,9 +31,6 @@ namespace FinalProject.Common
         private uint _source;
         private Vector3 _position;
 
-        /// <summary>
-        /// Initialize function pointers and shared library.
-        /// </summary>
         public static unsafe bool InitializeAudio()
         {
             if (_initialized) return true;
@@ -66,7 +63,7 @@ namespace FinalProject.Common
                     return false;
                 }
 
-                // shared lib loading and function pointers
+                // Shared lib loading and function pointers
                 string[] libNames = { "soft_oal", "OpenAL32", "openal", "libopenal.so.1", "libopenal.1.dylib" };
                 foreach (var name in libNames)
                 {
@@ -106,9 +103,6 @@ namespace FinalProject.Common
             }
         }
 
-        /// <summary>
-        /// Cleanup actual audio system.
-        /// </summary>
         public static unsafe void ShutdownAudio()
         {
             if (!_initialized) return;
@@ -123,11 +117,6 @@ namespace FinalProject.Common
             _initialized = false;
         }
 
-        /// <summary>
-        /// Update the global location information for where the camera is, to
-        /// play audio relative to it in 3d space. Should be called every frame
-        /// with camera data.
-        /// </summary>
         public static unsafe void UpdateUserAudioLocationFromCamera(Camera camera)
         {
             if (!_initialized) return;
@@ -147,11 +136,6 @@ namespace FinalProject.Common
             }
         }
 
-        /// <summary>
-        /// Create audio component at a position, with a max distance.
-        /// The position can be updated later on by assigning to
-        /// `AudioComponent.Position`.
-        /// </summary>
         public AudioComponent(string wavFilePath, Vector3 position, float distance)
         {
             if (!_initialized || _al == null)
@@ -169,9 +153,6 @@ namespace FinalProject.Common
             _al.SetSourceProperty(_source, SourceFloat.RolloffFactor, 0.3f);
         }
 
-        /// <summary>
-        /// Current 3D position of the audio source. This is NOT where the player is.
-        /// </summary>
         public Vector3 Position
         {
             get => _position;
@@ -232,7 +213,6 @@ namespace FinalProject.Common
 
         private uint LoadWav(string filePath)
         {
-            // https://docs.fileformat.com/audio/wav/
 
             uint buffer = _al!.GenBuffer();
 
@@ -243,7 +223,7 @@ namespace FinalProject.Common
             if (riff != "RIFF")
                 throw new InvalidDataException("Not a valid WAV file (missing RIFF header)");
 
-            reader.ReadInt32(); // discard next 4 bytes
+            reader.ReadInt32();
             string wave = new string(reader.ReadChars(4));
             if (wave != "WAVE")
                 throw new InvalidDataException("Not a valid WAV file (missing WAVE header)");
@@ -259,11 +239,11 @@ namespace FinalProject.Common
 
                 if (chunkId == "fmt ")
                 {
-                    reader.ReadInt16(); // audio format
+                    reader.ReadInt16();
                     channels = reader.ReadInt16();
                     sampleRate = reader.ReadInt32();
-                    reader.ReadInt32(); // byte rate
-                    reader.ReadInt16(); // block align
+                    reader.ReadInt32(); 
+                    reader.ReadInt16(); 
                     bitsPerSample = reader.ReadInt16();
 
                     if (chunkSize > 16)

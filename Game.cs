@@ -219,9 +219,9 @@ namespace FinalProject
             // Define exclusion zones
             List<Vector3> exclusionZones = new List<Vector3>
             {
-                Vector3.Zero, // Player spawn
-                _carPosition, // Car location
-                monsterSpawn // Monster spawn
+                Vector3.Zero,
+                _carPosition,
+                monsterSpawn
             };
 
             // Generate forest
@@ -285,7 +285,7 @@ namespace FinalProject
             _camera.Position = new Vector3(0, 1.6f, 0);
             _camera.Yaw = _initialCameraYaw;
             _camera.Pitch = _initialCameraPitch;
-            _firstMove = true; // Reset mouse movement
+            _firstMove = true;
 
             // Reset monster
             _monsterObject.Position = _initialMonsterPosition;
@@ -368,7 +368,7 @@ namespace FinalProject
                 if (_gameStarted && !_gameEnded)
                 {
                     _isPaused = !_isPaused;
-                    _showSettings = false; // Close settings when pausing/unpausing
+                    _showSettings = false;
                     CursorState = _isPaused ? CursorState.Normal : CursorState.Grabbed;
                 }
             }
@@ -457,7 +457,7 @@ namespace FinalProject
                     _camera.Position = tryZ;
             }
 
-            { // walking / running audio
+            { // Walking / running audio
                 _walkSound.Position = _camera.Position;
                 _runSound.Position = _camera.Position;
 
@@ -588,7 +588,7 @@ namespace FinalProject
                 if (_stamina <= 0f)
                 {
                     _stamina = 0f;
-                    _isSprinting = false; // force stop sprinting
+                    _isSprinting = false;
                 }
             }
             else
@@ -608,7 +608,7 @@ namespace FinalProject
                 position.Z < WORLD_MIN ||
                 position.Z > WORLD_MAX)
             {
-                return true; // treat as collision
+                return true;
             }
 
             // Object collisions
@@ -640,7 +640,7 @@ namespace FinalProject
         ImGui.Begin("Lose_Frameless", flags);
 
         ImGui.SetWindowFontScale(2.6f);
-        ImGui.PushStyleColor(ImGuiCol.Text, new System.Numerics.Vector4(1.0f, 0.2f, 0.2f, 1.0f)); // Red text
+        ImGui.PushStyleColor(ImGuiCol.Text, new System.Numerics.Vector4(1.0f, 0.2f, 0.2f, 1.0f));
         ImGuiHelpers.TextCentered("YOU DIED");
         ImGui.PopStyleColor();
         ImGui.SetWindowFontScale(1.0f);
@@ -701,7 +701,7 @@ namespace FinalProject
                 if (ImGui.Button("Start", new System.Numerics.Vector2(340, 80)))
                 {
                     _gameStarted = true;
-                    _firstMove = true; // Reset mouse on game start
+                    _firstMove = true;
                     CursorState = CursorState.Grabbed;
                 }
 
@@ -753,7 +753,7 @@ namespace FinalProject
             if (ImGui.Button("Continue", new System.Numerics.Vector2(340, 80)))
             {
                 _isPaused = false;
-                _firstMove = true; // Reset mouse on unpause
+                _firstMove = true;
                 CursorState = CursorState.Grabbed;
             }
 
@@ -766,7 +766,7 @@ namespace FinalProject
             ImGui.Spacing();
             if (ImGui.Button("Main Menu", new System.Numerics.Vector2(340, 80)))
             {
-                ResetGameState(); // Use helper method
+                ResetGameState();
             }
 
             ImGui.Spacing();
@@ -951,7 +951,7 @@ namespace FinalProject
             ImGui.SetWindowFontScale(1.4f);
             if (ImGui.Button("Main Menu", new System.Numerics.Vector2(220, 60)))
             {
-                ResetGameState(); // Use helper method
+                ResetGameState();
             }
 
             ImGui.SameLine();

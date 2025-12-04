@@ -29,7 +29,7 @@ namespace FinalProject
         // Detection ranges
         private const float LIGHT_DETECTION_RANGE = 40f;
         private const float VISUAL_DETECTION_RANGE = 15f;
-        private const float VISUAL_DETECTION_ANGLE = 60f; //cone in front)
+        private const float VISUAL_DETECTION_ANGLE = 60f;
 
 
         // Patrol variables
@@ -160,7 +160,7 @@ namespace FinalProject
                     // If lost sight of player for too long hunt at the last position
                     if (!CanSeePlayer(playerPosition))
                     {
-                        _losePlayerTimer -= 0.016f; // Approximate frame time
+                        _losePlayerTimer -= 0.016f;
                         if (_losePlayerTimer <= 0)
                         {
                             TransitionToHunting(_lastSeenPlayerPosition);
@@ -207,7 +207,7 @@ namespace FinalProject
         {
             Vector3 monsterPosition = _monsterObject.Position;
             Vector3 directionToPlayer = playerPosition - monsterPosition;
-            directionToPlayer.Y = 0; // Keep on ground
+            directionToPlayer.Y = 0;
 
             float distanceToPlayer = directionToPlayer.Length;
 
@@ -239,7 +239,7 @@ namespace FinalProject
 
             if (distance < 2f)
             {
-                _huntingGiveUpTimer -= deltaTime * 2;//give up faster when reached last known position
+                _huntingGiveUpTimer -= deltaTime * 2;
             }
             else
             {
@@ -340,8 +340,8 @@ namespace FinalProject
         private Vector3 GenerateRandomPatrolPoint()
         {
             // Generate random point within patrol area
-            float x = (float)(_random.NextDouble() * 40 - 20); // -20 to 20
-            float z = (float)(_random.NextDouble() * 40 - 20); // -20 to 20
+            float x = (float)(_random.NextDouble() * 40 - 20);
+            float z = (float)(_random.NextDouble() * 40 - 20);
             return new Vector3(x, 1.35f, z);
         }
 

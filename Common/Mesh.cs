@@ -23,9 +23,6 @@ public class Mesh
     public Vector3 OriginalMin { get; private set; }
     public Vector3 OriginalMax { get; private set; }
     
-    /// <summary>
-    /// Create a Mesh object.
-    /// </summary>
     /// <param name="fbxPath">The path to the fbx model</param>
     /// <param name="shader">The shader used by that Mesh</param>
     /// <param name="texture">The texture of that Mesh</param>
@@ -72,9 +69,6 @@ public class Mesh
         }
     }
 
-    /// <summary>
-    /// Helper function for getting vertices by loading a .fbx file using its path name.
-    /// </summary>
     /// <param name="path">The path to the fbx model</param>
     private float[] LoadFbx(string path)
     {
@@ -130,9 +124,6 @@ public class Mesh
         OriginalMax = max;
     }
 
-    /// <summary>
-    /// Draw Mesh (used in OnRenderFrame).
-    /// </summary>
     public void Draw()
     {
         GL.BindVertexArray(_vao);

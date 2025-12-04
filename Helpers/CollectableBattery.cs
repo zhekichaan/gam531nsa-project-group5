@@ -61,7 +61,7 @@ public class CollectibleBattery : WorldObject
 
     public override void UpdateTransform()
     {
-        if (IsCollected) return; // Don't update transform if collected
+        if (IsCollected) return;
 
         base.UpdateTransform();
     }
